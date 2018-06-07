@@ -19,7 +19,6 @@ package ru.runa.wfe.presentation.hibernate;
 
 import java.util.Collection;
 import java.util.List;
-
 import ru.runa.wfe.InternalApplicationException;
 import ru.runa.wfe.security.Permission;
 import ru.runa.wfe.security.SecuredObjectType;
@@ -251,39 +250,8 @@ public class CompilerParameters {
         return ownersRestrictions == null ? null : ownersRestrictions.getOwnersDBPath();
     }
 
-    /**
-     * User which must has permission on queried objects.
-     * 
-     * @return ids or <code>null</code>
-     */
-    public List<Long> getExecutorIdsToCheckPermission() {
-        return permissionRestrictions == null ? null : permissionRestrictions.getExecutorIdsToCheckPermission();
-    }
-
-    /**
-     * Permission, which at least one executors must has on queried objects.
-     * 
-     * @return Permission, which executor must have on object.
-     */
-    public String getPermissionName() {
-        return permissionRestrictions == null ? null : permissionRestrictions.getPermission().getName();
-    }
-
-    /**
-     * Type of secured object for queried objects.
-     * 
-     * @return {@link SecuredObjectType} types.
-     */
-    public String[] getSecuredObjectTypeNames() {
-        if (permissionRestrictions == null) {
-            return null;
-        }
-        SecuredObjectType[] types = permissionRestrictions.getSecuredObjectTypes();
-        String[] result = new String[types.length];
-        for (int i = 0;  i < types.length;  i++) {
-            result[i] = types[i].getName();
-        }
-        return result;
+    public RestrictionsToPermissions getPermissionRestrictions() {
+        return permissionRestrictions;
     }
 
     /**
@@ -347,7 +315,6 @@ public class CompilerParameters {
     }
 
     /**
-     * 
      * @return Returns batch presentation compiler parameters.
      */
     public CompilerParameters addPermissions(RestrictionsToPermissions permissions) {

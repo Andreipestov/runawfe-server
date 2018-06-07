@@ -6,9 +6,6 @@ import java.util.List;
 import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.hibernate.criterion.DetachedCriteria;
-import org.hibernate.criterion.Order;
-import org.hibernate.criterion.Restrictions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import ru.runa.wfe.audit.ProcessLog;
@@ -16,7 +13,9 @@ import ru.runa.wfe.audit.dao.ProcessLogAwareDao;
 import ru.runa.wfe.audit.dao.ProcessLogDAO;
 import ru.runa.wfe.commons.dao.Constant;
 import ru.runa.wfe.commons.dao.ConstantDAO;
+import ru.runa.wfe.commons.querydsl.HibernateQueryFactory;
 import ru.runa.wfe.execution.Process;
+import ru.runa.wfe.execution.QProcess;
 import ru.runa.wfe.execution.Token;
 import ru.runa.wfe.execution.dao.ProcessDAO;
 
@@ -29,15 +28,14 @@ public class AggregatedHistoryImporter {
 
     @Autowired
     private ProcessLogAwareDao processLogAwareDao;
-
     @Autowired
     private ConstantDAO constantDao;
-
     @Autowired
     private ProcessLogDAO processLogDao;
-
     @Autowired
     private ProcessDAO processDao;
+    @Autowired
+    private HibernateQueryFactory queryFactory;
 
     @Transactional
     public void execute() {
@@ -98,17 +96,15 @@ public class AggregatedHistoryImporter {
     private long getProcessIdToImport() {
         Constant importFromSettings = constantDao.get(importFromConstantName);
         if (importFromSettings == null || Strings.isNullOrEmpty(importFromSettings.getValue())) {
-            DetachedCriteria criteria = DetachedCriteria.forClass(Process.class).addOrder(Order.desc("id"));
-            List<Process> processes = processDao.getHibernateTemplate().findByCriteria(criteria, 0, 1);
-            long processId = 0;
-            if (processes != null && !processes.isEmpty()) {
-                processId = processes.get(0).getId();
+            QProcess p = QProcess.process;
+            Long processId = queryFactory.select(p.id).from(p).orderBy(p.id.desc()).fetchFirst();
+            if (processId == null) {
+                processId = 0L;
             }
             constantDao.create(new Constant(importFromConstantName, String.valueOf(processId)));
             importFromSettings = constantDao.get(importFromConstantName);
         }
-        long processId = Long.parseLong(importFromSettings.getValue());
-        return processId;
+        return Long.parseLong(importFromSettings.getValue());
     }
 
     /**
@@ -123,14 +119,9 @@ public class AggregatedHistoryImporter {
             constantDao.create(new Constant(importFromConstantName, String.valueOf(processId)));
             importFromSettings = constantDao.get(importFromConstantName);
         }
-        DetachedCriteria criteria = DetachedCriteria.forClass(Process.class).addOrder(Order.desc("id"));
-        criteria.add(Restrictions.lt("id", processId));
-        List<Process> processes = processDao.getHibernateTemplate().findByCriteria(criteria, 0, 1);
-        if (processes != null && !processes.isEmpty()) {
-            importFromSettings.setValue(String.valueOf(processes.get(0).getId()));
-        } else {
-            importFromSettings.setValue(String.valueOf(0));
-        }
+        QProcess p = QProcess.process;
+        Long foundId = queryFactory.select(p.id).from(p).where(p.id.lt(processId)).orderBy(p.id.desc()).fetchFirst();
+        importFromSettings.setValue(String.valueOf(foundId != null ? foundId : 0L));
         constantDao.update(importFromSettings);
     }
 

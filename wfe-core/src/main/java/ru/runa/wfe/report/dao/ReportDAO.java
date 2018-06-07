@@ -1,27 +1,29 @@
 package ru.runa.wfe.report.dao;
 
-import java.util.List;
-
 import com.google.common.collect.Lists;
-
+import java.util.List;
+import org.hibernate.classic.Session;
+import org.springframework.stereotype.Component;
 import ru.runa.wfe.commons.dao.GenericDAO;
 import ru.runa.wfe.presentation.BatchPresentation;
 import ru.runa.wfe.presentation.hibernate.CompilerParameters;
 import ru.runa.wfe.presentation.hibernate.PresentationCompiler;
 import ru.runa.wfe.presentation.hibernate.RestrictionsToPermissions;
 import ru.runa.wfe.report.ReportDefinition;
+import ru.runa.wfe.report.ReportParameter;
 import ru.runa.wfe.report.ReportWithNameExistsException;
 import ru.runa.wfe.report.dto.WfReport;
 import ru.runa.wfe.security.Permission;
 import ru.runa.wfe.security.SecuredObjectType;
 import ru.runa.wfe.user.User;
 
+@Component
 public class ReportDAO extends GenericDAO<ReportDefinition> {
 
     private static final SecuredObjectType[] SECURED_OBJECTS = new SecuredObjectType[] { SecuredObjectType.REPORT };
 
     public List<WfReport> getReportDefinitions(User user, BatchPresentation batchPresentation, boolean enablePaging) {
-        RestrictionsToPermissions permissions = new RestrictionsToPermissions(user, Permission.READ, SECURED_OBJECTS);
+        RestrictionsToPermissions permissions = new RestrictionsToPermissions(user, Permission.LIST, SECURED_OBJECTS);
         CompilerParameters parameters = CompilerParameters.create(enablePaging).addPermissions(permissions);
         List<ReportDefinition> deployments = new PresentationCompiler<ReportDefinition>(batchPresentation).getBatch(parameters);
         List<WfReport> definitions = Lists.newArrayList();
@@ -47,8 +49,12 @@ public class ReportDAO extends GenericDAO<ReportDefinition> {
     }
 
     public void redeployReport(ReportDefinition reportDefinition) {
+        Session session = sessionFactory.getCurrentSession();
+        // TODO All this magic is weird: get() then updateFrom().
         ReportDefinition def = get(reportDefinition.getId());
-        getHibernateTemplate().deleteAll(def.getParameters());
+        for (ReportParameter p : def.getParameters()) {
+            session.delete(p);
+        }
         def.updateFrom(reportDefinition);
         this.update(def);
     }

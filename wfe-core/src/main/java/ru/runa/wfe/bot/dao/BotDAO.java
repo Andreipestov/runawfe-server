@@ -18,11 +18,13 @@
 package ru.runa.wfe.bot.dao;
 
 import java.util.List;
-
+import org.springframework.stereotype.Component;
 import ru.runa.wfe.bot.Bot;
 import ru.runa.wfe.bot.BotDoesNotExistException;
 import ru.runa.wfe.bot.BotStation;
+import ru.runa.wfe.bot.QBot;
 import ru.runa.wfe.commons.dao.GenericDAO;
+import ru.runa.wfe.user.User;
 
 /**
  * DAO level interface for managing bots.
@@ -30,7 +32,7 @@ import ru.runa.wfe.commons.dao.GenericDAO;
  * @author Konstantinov Aleksey 25.02.2012
  * @since 2.0
  */
-@SuppressWarnings("unchecked")
+@Component
 public class BotDAO extends GenericDAO<Bot> {
 
     @Override
@@ -46,7 +48,8 @@ public class BotDAO extends GenericDAO<Bot> {
      * @return loaded {@linkplain Bot} or <code>null</code> if no bot found
      */
     public Bot get(BotStation botStation, String username) {
-        return findFirstOrNull("from Bot where botStation=? and username=?", botStation, username);
+        QBot b = QBot.bot;
+        return queryFactory.selectFrom(b).where(b.botStation.eq(botStation).and(b.username.eq(username))).fetchFirst();
     }
 
     /**
@@ -56,7 +59,15 @@ public class BotDAO extends GenericDAO<Bot> {
      * @return loaded {@linkplain Bot} or <code>null</code> if no bot found
      */
     public Bot get(String username) {
-        return findFirstOrNull("from Bot where username=?", username);
+        QBot b = QBot.bot;
+        return queryFactory.selectFrom(b).where(b.username.eq(username)).fetchFirst();
+    }
+
+    public boolean isBot(User u) {
+        QBot b = QBot.bot;
+        // TODO Should be select(Expressions.constant(1)), but: https://github.com/querydsl/querydsl/issues/455
+        //      May be this is fixed in Hibernate 5? If yes, search for all ".fetchFirst() != null" and replace.
+        return queryFactory.select(b.id).from(b).where(b.username.eq(u.getName())).fetchFirst() != null;
     }
 
     /**
@@ -71,14 +82,10 @@ public class BotDAO extends GenericDAO<Bot> {
     }
 
     /**
-     * Load all {@linkplain Bot}'s defined for {@linkplain BotStation}.
-     * 
-     * @param botStation
-     *            {@linkplain BotStation} to load {@linkplain Bot}'s.
-     * @return {@linkplain Bot}'s, defined for {@linkplain BotStation}.
+     * Load all {@linkplain Bot}s defined for {@linkplain BotStation}.
      */
-    public List<Bot> getAll(final BotStation botStation) {
-        return (List<Bot>) getHibernateTemplate().find("from Bot where botStation=?", botStation);
+    public List<Bot> getAll(Long botStationId) {
+        QBot b = QBot.bot;
+        return queryFactory.selectFrom(b).where(b.botStation.id.eq(botStationId)).fetch();
     }
-
 }

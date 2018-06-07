@@ -17,15 +17,12 @@
  */
 package ru.runa.wf.web.html;
 
+import com.google.common.collect.Maps;
 import java.util.Map;
-
 import org.apache.ecs.ConcreteElement;
 import org.apache.ecs.StringElement;
 import org.apache.ecs.html.A;
 import org.apache.ecs.html.TD;
-
-import com.google.common.collect.Maps;
-
 import ru.runa.common.web.Commons;
 import ru.runa.common.web.form.IdForm;
 import ru.runa.common.web.form.IdVersionForm;
@@ -48,15 +45,15 @@ import ru.runa.wfe.service.delegate.Delegates;
 public class UndeployProcessDefinitionTDBuilder extends BaseTDBuilder {
 
     public UndeployProcessDefinitionTDBuilder() {
-        super(Permission.UNDEPLOY_DEFINITION);
+        super(Permission.ALL);
     }
 
     @Override
     public TD build(Object object, Env env) {
         WfDefinition definition = (WfDefinition) object;
         BatchPresentation presentation = BatchPresentationFactory.PROCESSES.createDefault();
-        int definitionNameFieldIndex = presentation.getClassPresentation().getFieldIndex(ProcessClassPresentation.DEFINITION_NAME);
-        int definitionVersionFieldIndex = presentation.getClassPresentation().getFieldIndex(ProcessClassPresentation.DEFINITION_VERSION);
+        int definitionNameFieldIndex = presentation.getType().getFieldIndex(ProcessClassPresentation.DEFINITION_NAME);
+        int definitionVersionFieldIndex = presentation.getType().getFieldIndex(ProcessClassPresentation.DEFINITION_VERSION);
         presentation.getFilteredFields().put(definitionNameFieldIndex, new StringFilterCriteria(definition.getName()));
         presentation.getFilteredFields().put(definitionVersionFieldIndex, new LongFilterCriteria(definition.getVersion()));
         int allCount = Delegates.getExecutionService().getProcessesCount(env.getUser(), presentation);

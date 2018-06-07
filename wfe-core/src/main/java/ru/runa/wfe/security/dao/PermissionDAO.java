@@ -1,28 +1,31 @@
 /*
  * This file is part of the RUNA WFE project.
- * 
- * This program is free software; you can redistribute it and/or 
- * modify it under the terms of the GNU Lesser General Public License 
- * as published by the Free Software Foundation; version 2.1 
- * of the License. 
- * 
- * This program is distributed in the hope that it will be useful, 
- * but WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
- * GNU Lesser General Public License for more details. 
- * 
- * You should have received a copy of the GNU Lesser General Public License 
- * along with this program; if not, write to the Free Software 
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; version 2.1
+ * of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
  */
 package ru.runa.wfe.security.dao;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
+import com.mysema.commons.lang.CloseableIterator;
+import com.querydsl.jpa.JPQLQuery;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -30,8 +33,11 @@ import java.util.Set;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.orm.hibernate3.HibernateCallback;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
 import ru.runa.wfe.InternalApplicationException;
+import ru.runa.wfe.commons.CollectionUtil;
 import ru.runa.wfe.commons.SystemProperties;
 import ru.runa.wfe.commons.TimeMeasurer;
 import ru.runa.wfe.commons.dao.CommonDAO;
@@ -40,149 +46,229 @@ import ru.runa.wfe.presentation.hibernate.CompilerParameters;
 import ru.runa.wfe.presentation.hibernate.PresentationCompiler;
 import ru.runa.wfe.presentation.hibernate.RestrictionsToPermissions;
 import ru.runa.wfe.security.ApplicablePermissions;
+import ru.runa.wfe.security.AuthorizationException;
 import ru.runa.wfe.security.Permission;
+import ru.runa.wfe.security.PermissionSubstitutions;
 import ru.runa.wfe.security.SecuredObject;
 import ru.runa.wfe.security.SecuredObjectType;
 import ru.runa.wfe.user.Executor;
 import ru.runa.wfe.user.User;
 import ru.runa.wfe.user.dao.ExecutorDAO;
 
+
 /**
  * Permission DAO level implementation via Hibernate.
- * 
+ *
  * @author Konstantinov Aleksey 19.02.2012
  */
+@Component
+@Transactional(
+        // TODO This is hack, otherwise /manage_process_definition.do?id=N crashed with internall error if user had no permission.
+        //      That's because ProcessDefinitionBaseFormTag.getDefinition() calls DefinitionService.getProcessDefinition() which
+        //      checks permissions on its own. This @Transactional annotation is required for initialization and cannot be removed,
+        //      but it's just a symptom: problem root is a mess in permission checks.
+        noRollbackFor = {AuthorizationException.class}
+)
 @SuppressWarnings("unchecked")
 public class PermissionDAO extends CommonDAO {
+
+    private static final List<List<Long>> nonEmptyListList = Collections.singletonList(Collections.singletonList(1L));
+    private static final Set<Long> nonEmptySet = Collections.singleton(1L);
+
     @Autowired
     private ExecutorDAO executorDAO;
     @Autowired
     private SessionFactory sessionFactory;
 
-    private final Map<SecuredObjectType, Set<Executor>> privelegedExecutors = Maps.newHashMap();
-    private final Set<Long> privelegedExecutorIds = Sets.newHashSet();
+    private final Map<SecuredObjectType, Set<Executor>> privelegedExecutors = new HashMap<>();
+    private final Set<Long> privelegedExecutorIds = new HashSet<>();
 
     public PermissionDAO() {
         for (SecuredObjectType type : SecuredObjectType.values()) {
-            privelegedExecutors.put(type, new HashSet<Executor>());
+            privelegedExecutors.put(type, new HashSet<>());
         }
     }
 
     /**
-     * Called once after patches are successfully applied
+     * Called once after patches are successfully applied.
      */
-    public void init() throws Exception {
-        List<PrivelegedMapping> list = getHibernateTemplate().find("from PrivelegedMapping m");
-        for (PrivelegedMapping mapping : list) {
-            privelegedExecutors.get(mapping.getType()).add(mapping.getExecutor());
-            privelegedExecutorIds.add(mapping.getExecutor().getId());
+    public void init() {
+        QPrivelegedMapping pm = QPrivelegedMapping.privelegedMapping;
+        CloseableIterator<PrivelegedMapping> i = queryFactory.selectFrom(pm).iterate();
+        while (i.hasNext()) {
+            PrivelegedMapping m = i.next();
+            privelegedExecutors.get(m.getType()).add(m.getExecutor());
+            privelegedExecutorIds.add(m.getExecutor().getId());
         }
+        i.close();
     }
 
-    public List<Permission> getIssuedPermissions(Executor executor, SecuredObject securedObject) {
-        List<Permission> permissions = Lists.newArrayList();
-        if (!isPrivilegedExecutor(securedObject, executor)) {
-            for (PermissionMapping pm : getOwnPermissionMappings(executor, securedObject)) {
-                permissions.add(pm.getPermission());
-            }
-        }
-        return permissions;
+    public List<Permission> getIssuedPermissions(Executor executor, SecuredObject object) {
+        QPermissionMapping pm = QPermissionMapping.permissionMapping;
+        return queryFactory.select(pm.permission).from(pm)
+                .where(pm.objectType.eq(object.getSecuredObjectType())
+                        .and(pm.objectId.eq(object.getIdentifiableId()))
+                        .and(pm.executor.eq(executor)))
+                .fetch();
     }
 
     /**
      * Sets permissions for executor on securedObject.
-     * 
+     *
      * @param executor
      *            Executor, which got permissions.
      * @param permissions
      *            Permissions for executor.
-     * @param securedObject
+     * @param object
      *            Secured object to set permission on.
      */
-    public void setPermissions(Executor executor, Collection<Permission> permissions, SecuredObject securedObject) {
-        if (isPrivilegedExecutor(securedObject, executor)) {
-            log.debug(permissions + " not granted for privileged " + executor);
+    public void setPermissions(Executor executor, Collection<Permission> permissions, SecuredObject object) {
+        ApplicablePermissions.check(object, permissions);
+        if (isPrivilegedExecutor(object, executor)) {
+            logger.debug(permissions + " not granted for privileged " + executor);
             return;
         }
-        ApplicablePermissions.check(securedObject, permissions);
-        Session session = sessionFactory.getCurrentSession();
-        List<PermissionMapping> toDelete = getOwnPermissionMappings(executor, securedObject);
-        for (Permission permission : permissions) {
-            PermissionMapping pm = new PermissionMapping(executor, securedObject, permission);
-            if (toDelete.contains(pm)) {
-                toDelete.remove(pm);
-            } else {
-                session.save(pm);
+
+        List<Permission> issued = getIssuedPermissions(executor, object);
+        Set<Permission> toAdd = new HashSet<>(permissions);
+        toAdd.removeAll(issued);
+        Set<Permission> toDelete = new HashSet<>(issued);
+        toDelete.removeAll(permissions);
+
+        if (!toAdd.isEmpty()) {
+            Session session = sessionFactory.getCurrentSession();
+            for (Permission p : toAdd) {
+                session.save(new PermissionMapping(executor, object, p));
             }
         }
         if (!toDelete.isEmpty()) {
-            session.createQuery("delete from PermissionMapping pm where pm in (:pms)").setParameterList("pms", toDelete).executeUpdate();
+            QPermissionMapping pm = QPermissionMapping.permissionMapping;
+            queryFactory.delete(pm)
+                    .where(pm.objectType.eq(object.getSecuredObjectType())
+                            .and(pm.objectId.eq(object.getIdentifiableId()))
+                            .and(pm.executor.eq(executor))
+                            .and(pm.permission.in(toDelete)))
+                    .execute();
         }
     }
 
     /**
-     * Checks whether executor has permission on securedObject.
-     * 
-     * @param user
-     *            Executor, which permission must be check.
-     * @param permission
-     *            Checking permission.
-     * @param securedObject
-     *            Secured object to check permission on.
-     * @return true if executor has requested permission on secuedObject; false otherwise.
+     * Throws if user has no permission to object.
      */
-    public boolean isAllowed(final User user, final Permission permission, final SecuredObject securedObject) {
-        return isAllowed(user, permission, securedObject.getSecuredObjectType(), securedObject.getIdentifiableId());
+    public void checkAllowed(User user, Permission permission, SecuredObject object) {
+        if (!isAllowed(user, permission, object)) {
+            throw new AuthorizationException(user + " does not have " + permission + " to " + object);
+        }
     }
 
-    public boolean isAllowed(final User user, final Permission permission, final SecuredObjectType securedObjectType, final Long identifiableId) {
-        if (permission == Permission.NO_PERMISSION) {
-            // Optimization; see comments at NO_PERMISSION definition.
-            return false;
+    /**
+     * Throws if user has no permission to {type, id}.
+     */
+    public void checkAllowed(User user, Permission permission, SecuredObjectType type, Long id) {
+        if (!isAllowed(user, permission, type, id)) {
+            throw new AuthorizationException(user + " does not have " + permission + " to (" + type + ", " + id + ")");
         }
-        final Set<Executor> executorWithGroups = getExecutorWithAllHisGroups(user.getActor());
-        if (isPrivilegedExecutor(securedObjectType, executorWithGroups)) {
-            return true;
-        }
-        return getHibernateTemplate().execute(new HibernateCallback<Object>() {
-            @Override
-            public Object doInHibernate(Session session) {
-                return session.createQuery("select 0 from PermissionMapping where executor in (:executors) and objectType=:objectType and objectId=:objectId and permission=:permission")
-                        .setParameterList("executors", executorWithGroups)
-                        .setParameter("objectType", securedObjectType)
-                        .setParameter("objectId", identifiableId)
-                        .setParameter("permission", permission)
-                        .setMaxResults(1)
-                        .uniqueResult();
-            }
-        }) != null;
     }
 
-    public boolean isAllowedForAny(final User user, final Permission permission, final SecuredObjectType securedObjectType) {
-        if (permission == Permission.NO_PERMISSION) {
-            // Optimization; see comments at NO_PERMISSION definition.
-            return false;
+    /**
+     * Throws if user has no permission to {type, all given ids}.
+     */
+    public void checkAllowedForAll(User user, Permission permission, SecuredObjectType type, List<Long> ids) {
+        Assert.notNull(ids);
+        List<Long> notAllowed = CollectionUtil.diffList(ids, filterAllowedIds(user.getActor(), permission, type, ids));
+        if (!notAllowed.isEmpty()) {
+            Collections.sort(notAllowed);
+            throw new AuthorizationException("User " + user + " does not have " + permission + " on all of (" + type + ", " + notAllowed + ")");
         }
-        final Set<Executor> executorWithGroups = getExecutorWithAllHisGroups(user.getActor());
-        if (isPrivilegedExecutor(securedObjectType, executorWithGroups)) {
-            return true;
+    }
+
+    /**
+     * Returns true if user have permission to object.
+     */
+    public boolean isAllowed(User user, Permission permission, SecuredObject object) {
+        return isAllowed(user.getActor(), permission, object.getSecuredObjectType(), object.getIdentifiableId());
+    }
+
+    public boolean isAllowed(User user, Permission permission, SecuredObjectType type, Long id) {
+        return isAllowed(user.getActor(), permission, type, id);
+    }
+
+    public boolean isAllowed(Executor executor, Permission permission, SecuredObjectType type, Long id) {
+        Assert.notNull(id);
+        return !filterAllowedIds(executor, permission, type, Collections.singletonList(id)).isEmpty();
+    }
+
+    public boolean isAllowed(Executor executor, Permission permission, SecuredObject object, boolean checkPrivileged) {
+        Long id = object.getIdentifiableId();
+        SecuredObjectType type = object.getSecuredObjectType();
+        Assert.notNull(id);
+        return !filterAllowedIds(executor, permission, type, Collections.singletonList(id), checkPrivileged).isEmpty();
+    }
+
+    /**
+     * Returns true if user have permission to {type, any id}.
+     */
+    public boolean isAllowedForAny(User user, Permission permission, SecuredObjectType type) {
+        return !filterAllowedIds(user.getActor(), permission, type, null).isEmpty();
+    }
+
+    public Set<Long> filterAllowedIds(Executor executor, Permission permission, SecuredObjectType type, List<Long> idsOrNull) {
+        return filterAllowedIds(executor, permission, type, idsOrNull, true);
+    }
+
+    /**
+     * Returns subset of `idsOrNull` for which `actor` has `permission`. If `idsOrNull` is null (e.g. when called from isAllowedForAny()),
+     * non-empty set (containing arbitrary value) means positive check result.
+     *
+     * @param checkPrivileged If false, only permission_mapping table is checked, but not privileged_mapping.
+     */
+    public Set<Long> filterAllowedIds(Executor executor, Permission permission, SecuredObjectType type, List<Long> idsOrNull, boolean checkPrivileged) {
+        ApplicablePermissions.check(type, permission);
+        boolean haveIds = idsOrNull != null;
+
+        if (permission == Permission.NONE) {
+            // Optimization; see comments at NONE definition.
+            return Collections.emptySet();
         }
-        return getHibernateTemplate().execute(new HibernateCallback<Object>() {
-            @Override
-            public Object doInHibernate(Session session) {
-                return session.createQuery("select 0 from PermissionMapping where executor in (:executors) and objectType=:objectType and permission=:permission")
-                        .setParameterList("executors", executorWithGroups)
-                        .setParameter("objectType", securedObjectType)
-                        .setParameter("permission", permission)
-                        .setMaxResults(1)
-                        .uniqueResult();
+
+        final Set<Executor> executorWithGroups = getExecutorWithAllHisGroups(executor);
+        if (checkPrivileged && isPrivilegedExecutor(type, executorWithGroups)) {
+            return haveIds ? new HashSet<>(idsOrNull) : nonEmptySet;
+        }
+
+        PermissionSubstitutions.ForCheck subst = PermissionSubstitutions.getForCheck(type, permission);
+        QPermissionMapping pm = QPermissionMapping.permissionMapping;
+
+        // Same type for all objects, thus same listType. I believe it would be faster to perform separate query here.
+        // ATTENTION!!! Also, HQL query with two conditions (on both type and listType) always returns empty rowset. :(
+        //              (Both here with QueryDSL and in HibernateCompilerHQLBuilder.addSecureCheck() with raw HQL.)
+        if (!subst.listPermissions.isEmpty() && queryFactory.select(pm.id).from(pm)
+                .where(pm.executor.in(executorWithGroups)
+                        .and(pm.objectType.eq(type.getListType()))
+                        .and(pm.objectId.eq(0L))
+                        .and(pm.permission.in(subst.listPermissions)))
+                .fetchFirst() != null) {
+            return haveIds ? new HashSet<>(idsOrNull) : nonEmptySet;
+        }
+
+        Set<Long> result = new HashSet<>();
+        for (List<Long> idsPart : haveIds ? Lists.partition(idsOrNull, SystemProperties.getDatabaseParametersCount()) : nonEmptyListList) {
+            JPQLQuery<Long> q = queryFactory.select(pm.id).from(pm)
+                    .where(pm.executor.in(executorWithGroups)
+                            .and(pm.objectType.eq(type))
+                            .and(pm.permission.in(subst.selfPermissions)));
+            if (haveIds) {
+                result.addAll(q.where(pm.objectId.in(idsPart)).fetch());
+            } else if (q.fetchFirst() != null) {
+                return nonEmptySet;
             }
-        }) != null;
+        }
+        return result;
     }
 
     /**
      * Checks whether executor has permission on securedObject's. Create result array in same order, as securedObject's.
-     * 
+     *
      * @param user
      *            Executor, which permission must be check.
      * @param permission
@@ -190,131 +276,110 @@ public class PermissionDAO extends CommonDAO {
      * @param securedObjects
      *            Secured objects to check permission on.
      * @return Array of: true if executor has requested permission on securedObject; false otherwise.
+     * @deprecated Use filterAllowedIds() which takes list of IDs, not of whole entities.
      */
-    public <T extends SecuredObject> boolean[] isAllowed(final User user, final Permission permission, final List<T> securedObjects) {
+    @Deprecated
+    public <T extends SecuredObject> boolean[] isAllowed(User user, Permission permission, List<T> securedObjects) {
         boolean[] result = new boolean[securedObjects.size()];
-        if (securedObjects.size() == 0) {
+        if (result.length == 0) {
             return result;
         }
-        if (permission == Permission.NO_PERMISSION) {
-            // Optimization; see comments at NO_PERMISSION definition.
-            for (int i = 0; i < securedObjects.size(); i++) {
-                result[i] = false;
-            }
+
+        if (permission == Permission.NONE) {
+            // Optimization; see comments at NONE definition.
+            Arrays.fill(result, false);
             return result;
         }
-        final Set<Executor> executorWithGroups = getExecutorWithAllHisGroups(user.getActor());
-        if (isPrivilegedExecutor(securedObjects.get(0).getSecuredObjectType(), executorWithGroups)) {
-            for (int i = 0; i < securedObjects.size(); i++) {
-                result[i] = true;
-            }
+
+        SecuredObjectType type = securedObjects.get(0).getSecuredObjectType();
+        Set<Executor> executorWithGroups = getExecutorWithAllHisGroups(user.getActor());
+        if (isPrivilegedExecutor(type, executorWithGroups)) {
+            Arrays.fill(result, true);
             return result;
         }
-        final SecuredObjectType securedObjectType = securedObjects.get(0).getSecuredObjectType();
-        List<PermissionMapping> permissions = new ArrayList<>();
+
+        PermissionSubstitutions.ForCheck subst = PermissionSubstitutions.getForCheck(type, permission);
+        QPermissionMapping pm = QPermissionMapping.permissionMapping;
+        // Same type for all objects, thus same listType. I believe it would be faster to perform separate query here.
+        if (!subst.listPermissions.isEmpty() && queryFactory.select(pm.id).from(pm)
+                .where(pm.executor.in(executorWithGroups)
+                        .and(pm.objectType.eq(type.getListType()))
+                        .and(pm.objectId.eq(0L))
+                        .and(pm.permission.in(subst.listPermissions)))
+                .fetchFirst() != null) {
+            Arrays.fill(result, true);
+            return result;
+        }
+
+        Set<Long> allowedIdentifiableIds = new HashSet<>(result.length);
         int window = SystemProperties.getDatabaseParametersCount() - executorWithGroups.size() - 2;
         Preconditions.checkArgument(window > 100);
-        for (int i = 0; i <= (securedObjects.size() - 1) / window; ++i) {
-            final int start = i * window;
-            final int end = (i + 1) * window > securedObjects.size() ? securedObjects.size() : (i + 1) * window;
-            final List<Long> identifiableIds = new ArrayList<>(end - start);
+        for (int i = 0; i <= (result.length - 1) / window; ++i) {
+            int start = i * window;
+            int end = Math.min((i + 1) * window, result.length);
+            List<Long> identifiableIds = new ArrayList<>(end - start);
             for (int j = start; j < end; j++) {
                 SecuredObject securedObject = securedObjects.get(j);
                 identifiableIds.add(securedObject.getIdentifiableId());
-                if (securedObjectType != securedObject.getSecuredObjectType()) {
-                    throw new InternalApplicationException("Secured objects should be of the same secured object type (" + securedObjectType + ")");
+                if (type != securedObject.getSecuredObjectType()) {
+                    throw new InternalApplicationException("Secured objects should be of the same secured object type (" + type + ")");
                 }
             }
             if (identifiableIds.isEmpty()) {
                 break;
             }
-            List<PermissionMapping> mappings = getHibernateTemplate().executeFind(new HibernateCallback<List<PermissionMapping>>() {
-
-                @Override
-                public List<PermissionMapping> doInHibernate(Session session) {
-                    return session
-                            .createQuery("from PermissionMapping where executor in (:executors) and objectType=:objectType and objectId in (:objectIds) and permission=:permission")
-                            .setParameterList("executors", executorWithGroups)
-                            .setParameter("objectType", securedObjectType)
-                            .setParameterList("objectIds", identifiableIds)
-                            .setParameter("permission", permission)
-                            .list();
-                }
-            });
-            permissions.addAll(mappings);
-        }
-        Set<Long> allowedIdentifiableIdsSet = new HashSet<>(permissions.size());
-        for (PermissionMapping pm : permissions) {
-            allowedIdentifiableIdsSet.add(pm.getObjectId());
+            allowedIdentifiableIds.addAll(queryFactory.selectDistinct(pm.objectId).from(pm)
+                    .where(pm.executor.in(executorWithGroups)
+                            .and(pm.objectType.eq(type))
+                            .and(pm.objectId.in(identifiableIds))
+                            .and(pm.permission.in(subst.selfPermissions)))
+                    .fetch());
         }
         for (int i = 0; i < securedObjects.size(); i++) {
-            result[i] = allowedIdentifiableIdsSet.contains(securedObjects.get(i).getIdentifiableId());
+            result[i] = allowedIdentifiableIds.contains(securedObjects.get(i).getIdentifiableId());
         }
         return result;
     }
 
-    /**
-     * Loads all permission mappings on specified secured object belongs to specified executor.
-     * 
-     * @param executor
-     *            Executor, which permissions is loading.
-     * @param securedObject
-     *            Secured object, which permissions is loading.
-     * @return Loaded permissions.
-     */
-    private List<PermissionMapping> getOwnPermissionMappings(Executor executor, SecuredObject securedObject) {
-        return getHibernateTemplate().find("from PermissionMapping where objectId=? and objectType=? and executor=?",
-                securedObject.getIdentifiableId(), securedObject.getSecuredObjectType(), executor);
-    }
-
     private Set<Executor> getExecutorWithAllHisGroups(Executor executor) {
-        Set<Executor> set = new HashSet<Executor>(executorDAO.getExecutorParentsAll(executor, false));
+        Set<Executor> set = new HashSet<>(executorDAO.getExecutorParentsAll(executor, false));
         set.add(executor);
         return set;
     }
 
     /**
      * Deletes all permissions for executor.
-     * 
-     * @param executor
-     *            executor
      */
     public void deleteOwnPermissions(Executor executor) {
-        getHibernateTemplate().bulkUpdate("delete from PermissionMapping where executor=?", executor);
+        QPermissionMapping pm = QPermissionMapping.permissionMapping;
+        queryFactory.delete(pm).where(pm.executor.eq(executor)).execute();
     }
 
     /**
      * Deletes all permissions for securedObject.
-     * 
-     * @param securedObject
-     *            securedObject
      */
-    public void deleteAllPermissions(SecuredObject securedObject) {
-        getHibernateTemplate().bulkUpdate("delete from PermissionMapping where objectType=? and objectId=?", securedObject.getSecuredObjectType(),
-                securedObject.getIdentifiableId());
+    public void deleteAllPermissions(SecuredObject obj) {
+        QPermissionMapping pm = QPermissionMapping.permissionMapping;
+        queryFactory.delete(pm).where(pm.objectType.eq(obj.getSecuredObjectType()).and(pm.objectId.eq(obj.getIdentifiableId()))).execute();
     }
 
     /**
-     * Load {@linkplain Executor}'s, which have permission on {@linkplain SecuredObject}. <br/>
-     * <b>Paging is not enabled.</b>
-     * 
-     * @param securedObject
-     *            {@linkplain SecuredObject} to load {@linkplain Executor}'s.
-     * @return List of {@linkplain Executor}'s with permission on {@linkplain SecuredObject}.
+     * Load {@linkplain Executor}s which have permission on {@linkplain SecuredObject}. <b>Paging is not enabled.</b>
      */
-    public Set<Executor> getExecutorsWithPermission(SecuredObject securedObject) {
-        List<Executor> list = getHibernateTemplate().find(
-                "select distinct(pm.executor) from PermissionMapping pm where pm.objectId=? and pm.objectType=?", securedObject.getIdentifiableId(),
-                securedObject.getSecuredObjectType());
-        Set<Executor> result = Sets.newHashSet(list);
-        result.addAll(getPrivilegedExecutors(securedObject.getSecuredObjectType()));
+    public Set<Executor> getExecutorsWithPermission(SecuredObject obj) {
+        QPermissionMapping pm = QPermissionMapping.permissionMapping;
+        List<Executor> list = queryFactory.selectDistinct(pm.executor).from(pm)
+                .where(pm.objectType.eq(obj.getSecuredObjectType()).and(pm.objectId.eq(obj.getIdentifiableId())))
+                .fetch();
+        Set<Executor> result = new HashSet<>(list);
+        result.addAll(getPrivilegedExecutors(obj.getSecuredObjectType()));
         return result;
     }
 
     /**
      * Return array of privileged {@linkplain Executor}s for given (@linkplain SecuredObject) type (i.e. executors whose permissions on SecuredObject
      * type can not be changed).
-     * 
+     *
      * @return Privileged {@linkplain Executor}'s array.
      */
     public Collection<Executor> getPrivilegedExecutors(SecuredObjectType securedObjectType) {
@@ -346,22 +411,22 @@ public class PermissionDAO extends CommonDAO {
     }
 
     /**
-     * Check if executor is privileged executor for given securedObject.
-     * 
+     * Check if executor is privileged executor for given object.
+     *
      * @param executor
      *            {@linkplain Executor}, to check if privileged.
-     * @param securedObject
+     * @param object
      *            {@linkplain SecuredObject} object, to check if executor is privileged to it.
-     * @return true if executor is privileged for given securedObject and false otherwise.
+     * @return true if executor is privileged for given object and false otherwise.
      */
-    private boolean isPrivilegedExecutor(SecuredObject securedObject, Executor executor) {
+    private boolean isPrivilegedExecutor(SecuredObject object, Executor executor) {
         Collection<Executor> executorWithGroups = getExecutorWithAllHisGroups(executor);
-        return isPrivilegedExecutor(securedObject.getSecuredObjectType(), executorWithGroups);
+        return isPrivilegedExecutor(object.getSecuredObjectType(), executorWithGroups);
     }
 
-    private boolean isPrivilegedExecutor(SecuredObjectType securedObjectType, Collection<Executor> executorWithGroups) {
+    private boolean isPrivilegedExecutor(SecuredObjectType type, Collection<Executor> executorWithGroups) {
         for (Executor executor : executorWithGroups) {
-            if (getPrivilegedExecutors(securedObjectType).contains(executor)) {
+            if (getPrivilegedExecutors(type).contains(executor)) {
                 return true;
             }
         }
@@ -370,16 +435,16 @@ public class PermissionDAO extends CommonDAO {
 
     /**
      * Adds new record in <i>dictionary</i> tables describing new SecuredObject type.
-     * 
+     *
      * @param type
      *            Type of SecuredObject.
      * @param executors
-     *            Privileged(?) executors for target class.
+     *            Privileged executors for target class.
      */
     public void addType(SecuredObjectType type, List<? extends Executor> executors) {
         for (Executor executor : executors) {
             PrivelegedMapping mapping = new PrivelegedMapping(type, executor);
-            getHibernateTemplate().save(mapping);
+            sessionFactory.getCurrentSession().save(mapping);
             privelegedExecutors.get(mapping.getType()).add(mapping.getExecutor());
             privelegedExecutorIds.add(mapping.getExecutor().getId());
         }
@@ -387,7 +452,7 @@ public class PermissionDAO extends CommonDAO {
 
     /**
      * Load list of {@linkplain SecuredObject} for which executors have permission on.
-     * 
+     *
      * @param user
      *            User which must have permission on loaded {@linkplain SecuredObject} (at least one).
      * @param batchPresentation
@@ -418,7 +483,7 @@ public class PermissionDAO extends CommonDAO {
 
     /**
      * Load count of {@linkplain SecuredObject} for which executors have permission on.
-     * 
+     *
      * @param user
      *            User which must have permission on loaded {@linkplain SecuredObject} (at least one).
      * @param batchPresentation
@@ -439,32 +504,13 @@ public class PermissionDAO extends CommonDAO {
         return count;
     }
 
-    public boolean permissionExists(final Permission permission, final SecuredObject resource) {
-        return getHibernateTemplate().execute(new HibernateCallback<Object>() {
-            @Override
-            public Object doInHibernate(Session session) {
-                return session.createQuery("select 0 from PermissionMapping where objectType=:objectType and objectId=:objectId and permission=:permission")
-                        .setParameter("objectType", resource.getSecuredObjectType())
-                        .setParameter("objectId", resource.getIdentifiableId())
-                        .setParameter("permission", permission)
-                        .setMaxResults(1)
-                        .uniqueResult();
-            }
-        }) != null;
-    }
-
-    public boolean permissionExists(final Executor executor, final Permission permission, final SecuredObject resource) {
-        return getHibernateTemplate().execute(new HibernateCallback<Object>() {
-            @Override
-            public Object doInHibernate(Session session) {
-                return session.createQuery("select 0 from PermissionMapping where executor = :executor and objectType=:objectType and objectId=:objectId and permission=:permission")
-                        .setParameter("executor", executor)
-                        .setParameter("objectType", resource.getSecuredObjectType())
-                        .setParameter("objectId", resource.getIdentifiableId())
-                        .setParameter("permission", permission)
-                        .setMaxResults(1)
-                        .uniqueResult();
-            }
-        }) != null;
+    public boolean permissionExists(final Executor executor, final Permission permission, final SecuredObject object) {
+        QPermissionMapping pm = QPermissionMapping.permissionMapping;
+        return queryFactory.select(pm.id).from(pm)
+                .where(pm.executor.eq(executor)
+                        .and(pm.objectType.eq(object.getSecuredObjectType()))
+                        .and(pm.objectId.eq(object.getIdentifiableId()))
+                        .and(pm.permission.eq(permission)))
+                .fetchFirst() != null;
     }
 }

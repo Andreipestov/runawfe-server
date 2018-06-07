@@ -1,7 +1,9 @@
 package ru.runa.wfe.bot.dao;
 
+import org.springframework.stereotype.Component;
 import ru.runa.wfe.bot.BotStation;
 import ru.runa.wfe.bot.BotStationDoesNotExistException;
+import ru.runa.wfe.bot.QBotStation;
 import ru.runa.wfe.commons.dao.GenericDAO;
 
 /**
@@ -10,6 +12,7 @@ import ru.runa.wfe.commons.dao.GenericDAO;
  * @author Konstantinov Aleksey 25.02.2012
  * @since 2.0
  */
+@Component
 public class BotStationDAO extends GenericDAO<BotStation> {
 
     @Override
@@ -26,7 +29,8 @@ public class BotStationDAO extends GenericDAO<BotStation> {
      *         station found
      */
     public BotStation get(String name) {
-        return findFirstOrNull("from BotStation where name=?", name);
+        QBotStation bs = QBotStation.botStation;
+        return queryFactory.selectFrom(bs).where(bs.name.eq(name)).fetchFirst();
     }
 
     /**
@@ -35,9 +39,8 @@ public class BotStationDAO extends GenericDAO<BotStation> {
      * @return loaded {@linkplain BotStation}, not <code>null</code>
      */
     public BotStation getNotNull(String name) {
-        BotStation botStation = findFirstOrNull("from BotStation where name=?", name);
+        BotStation botStation = get(name);
         checkNotNull(botStation, name);
         return botStation;
     }
-
 }

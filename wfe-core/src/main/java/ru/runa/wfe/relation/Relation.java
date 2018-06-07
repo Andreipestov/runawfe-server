@@ -26,11 +26,9 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.Transient;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import ru.runa.wfe.security.SecuredObjectBase;
-import ru.runa.wfe.security.SecuredObjectType;
+import ru.runa.wfe.commons.EntityWithId;
 
 /**
  * Relation between executors. Each relation contains some RelationPair, which
@@ -39,7 +37,7 @@ import ru.runa.wfe.security.SecuredObjectType;
 @Entity
 @Table(name = "EXECUTOR_RELATION")
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-public class Relation extends SecuredObjectBase {
+public class Relation implements EntityWithId {
     private static final long serialVersionUID = 1L;
 
     private Long id;
@@ -64,13 +62,6 @@ public class Relation extends SecuredObjectBase {
         this.createDate = new Date();
     }
 
-    @Transient
-    @Override
-    public SecuredObjectType getSecuredObjectType() {
-        return SecuredObjectType.RELATION;
-    }
-
-    @Override
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO, generator = "sequence")
     @SequenceGenerator(name = "sequence", sequenceName = "SEQ_RELATION_GROUP", allocationSize = 1)
@@ -139,6 +130,6 @@ public class Relation extends SecuredObjectBase {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this).add("id", getIdentifiableId()).add("name", getName()).toString();
+        return Objects.toStringHelper(this).add("id", getId()).add("name", getName()).toString();
     }
 }

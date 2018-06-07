@@ -17,13 +17,10 @@
  */
 package ru.runa.af.web.tag;
 
-import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.apache.ecs.html.TD;
 import org.tldgen.annotations.BodyContent;
 import ru.runa.af.web.BatchPresentationUtils;
@@ -45,15 +42,13 @@ import ru.runa.wfe.presentation.BatchPresentation;
 import ru.runa.wfe.presentation.BatchPresentationFactory;
 import ru.runa.wfe.presentation.FieldDescriptor;
 import ru.runa.wfe.relation.Relation;
-import ru.runa.wfe.relation.RelationPair;
 import ru.runa.wfe.security.Permission;
 import ru.runa.wfe.service.ExecutorService;
 import ru.runa.wfe.service.delegate.Delegates;
 import ru.runa.wfe.user.Executor;
-import ru.runa.wfe.user.Group;
 
 /**
- * List relations in which executor exists in left side.
+ * List relations which contain executor on the left side.
  */
 @org.tldgen.annotations.Tag(bodyContent = BodyContent.JSP, name = "listExecutorLeftRelationsForm")
 public class ListExecutorLeftRelationsFormTag extends SecuredObjectFormTag {
@@ -64,16 +59,11 @@ public class ListExecutorLeftRelationsFormTag extends SecuredObjectFormTag {
         List<Executor> executors = new ArrayList<>();
         executors.add(getSecuredObject());
         BatchPresentation batchPresentation = BatchPresentationFactory.GROUPS.createNonPaged();
-        for (Group group : Delegates.getExecutorService().getExecutorGroups(getUser(), getSecuredObject(), batchPresentation, false)) {
-            executors.add(group);
-        }
-        Set<Relation> relations = new HashSet<>();
-        for (RelationPair pair : Delegates.getRelationService().getExecutorsRelationPairsLeft(getUser(), null, executors)) {
-            relations.add(pair.getRelation());
-        }
+        executors.addAll(Delegates.getExecutorService().getExecutorGroups(getUser(), getSecuredObject(), batchPresentation, false));
+        List<Relation> relations = Delegates.getRelationService().getRelationsContainingExecutorsOnLeft(getUser(), executors);
         TableBuilder tableBuilder = new TableBuilder();
         TDBuilder[] builders = BatchPresentationUtils.getBuilders(null, BatchPresentationFactory.RELATIONS.createDefault(), null);
-        RowBuilder rowBuilder = new ReflectionRowBuilder(Lists.newArrayList(relations), batchPresentation, pageContext,
+        RowBuilder rowBuilder = new ReflectionRowBuilder(relations, batchPresentation, pageContext,
                 WebResources.ACTION_MAPPING_MANAGE_RELATION, "", new RelationURLStrategy(), builders);
         HeaderBuilder headerBuilder = new StringsHeaderBuilder(getNames());
         tdFormElement.addElement(tableBuilder.build(headerBuilder, rowBuilder));
@@ -85,7 +75,7 @@ public class ListExecutorLeftRelationsFormTag extends SecuredObjectFormTag {
     }
 
     @Override
-    protected boolean isFormButtonVisible() {
+    protected boolean isSubmitButtonVisible() {
         return false;
     }
 
@@ -96,7 +86,7 @@ public class ListExecutorLeftRelationsFormTag extends SecuredObjectFormTag {
     }
 
     @Override
-    protected Permission getPermission() {
+    protected Permission getSubmitPermission() {
         return Permission.READ;
     }
 

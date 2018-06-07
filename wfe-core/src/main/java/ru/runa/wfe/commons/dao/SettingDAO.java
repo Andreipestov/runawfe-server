@@ -18,19 +18,23 @@
 package ru.runa.wfe.commons.dao;
 
 import java.util.List;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * DAO for database initialization and variables managing. Creates appropriate
  * tables (drops tables if such tables already exists) and records.
  */
+@Component
+@Transactional
 public class SettingDAO extends GenericDAO<Setting> {
     private static final Log log = LogFactory.getLog(SettingDAO.class);
 
     private Setting get(String fileName, String name) {
-        return findFirstOrNull("from Setting where fileName = ? and name = ?", fileName, name);
+        QSetting s = QSetting.setting;
+        return queryFactory.selectFrom(s).where(s.fileName.eq(fileName).and(s.name.eq(name))).fetchFirst();
     }
 
     public String getValue(String fileName, String name) {
@@ -64,5 +68,4 @@ public class SettingDAO extends GenericDAO<Setting> {
             delete(l);
         }
     }
-
 }

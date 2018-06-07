@@ -47,11 +47,6 @@ public class VariableLoaderFromMap extends AbstractVariableLoader {
     }
 
     @Override
-    public List<Variable<?>> findInActiveProcessesByNameLikeAndStringValueEqualTo(String variableNamePattern, String stringValue) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public Map<String, Object> getAll(Process process) {
         Map<String, Variable<?>> processVariables = loadedVariables.get(process);
         if (processVariables == null) {

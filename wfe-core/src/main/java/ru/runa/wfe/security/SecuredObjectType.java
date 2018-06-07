@@ -10,15 +10,18 @@ import ru.runa.wfe.commons.xml.SecuredObejctTypeXmlAdapter;
 
 /**
  * @see SecuredObject
+ * @see SecuredSingleton
  * @see Permission
  * @see ApplicablePermissions
- * @see LegacyPermissions
+ * @see PermissionSubstitutions
  */
 @XmlJavaTypeAdapter(SecuredObejctTypeXmlAdapter.class)
-public final class SecuredObjectType implements Serializable {
+public final class SecuredObjectType implements Serializable, Comparable<SecuredObjectType> {
+    private static final long serialVersionUID = 3L;
 
     private static HashMap<String, SecuredObjectType> instancesByName = new HashMap<>();
-    private static List<SecuredObjectType> instancesList = Collections.unmodifiableList(new ArrayList<SecuredObjectType>());
+    private static ArrayList<SecuredObjectType> instancesList = new ArrayList<>();
+    private static List<SecuredObjectType> unmodifiableInstancesList = Collections.unmodifiableList(instancesList);
 
     /**
      * Mimics enum's valueOf() method, including thrown exception type.
@@ -37,32 +40,57 @@ public final class SecuredObjectType implements Serializable {
         return result;
     }
 
-    /**
-     * Returns unmodifiable set.
-     */
     public static List<SecuredObjectType> values() {
-        return instancesList;
+        return unmodifiableInstancesList;
     }
 
 
     private String name;
+    private SecuredObjectType listType;
 
-    public SecuredObjectType(String name) {
+    public SecuredObjectType(String name, SecuredObjectType listType) {
         if (name == null || name.isEmpty() || name.length() > 32) {
             // permission_mapping.object_type is varchar(32)
-            throw new RuntimeException("Null, empty or too large SecuredObjectType name");
+            throw new RuntimeException("SecuredObjectType.name is empty or too large");
         }
         this.name = name;
         if (instancesByName.put(name, this) != null) {
-            throw new RuntimeException("Duplicate SecuredObjectType name \"" + name + "\"");
+            throw new RuntimeException("Duplicate SecuredObjectType.name \"" + name + "\"");
         }
-        ArrayList<SecuredObjectType> newInstancesList = new ArrayList<>(instancesList);
-        newInstancesList.add(this);
-        instancesList = Collections.unmodifiableList(newInstancesList);
+
+        if (listType != null && listType.listType != null) {
+            throw new RuntimeException("(listType.listType != null) for SecuredObjectType \"" + name + "\"");
+        }
+        this.listType = listType;
+        instancesList.add(this);
+        Collections.sort(instancesList);
+    }
+
+    public SecuredObjectType(String name) {
+        this(name, null);
     }
 
     public String getName() {
         return name;
+    }
+
+    /**
+     * Used by PermissionSubstitutions and its callers. Nullable.
+     */
+    public SecuredObjectType getListType() {
+        return listType;
+    }
+
+    /**
+     * Used for assertions. Currently, all non-singletons (those <code>permission_mapping.object_id != 0</code>) have parent singleton list types.
+     */
+    public boolean isSingleton() {
+        return listType == null;
+    }
+
+    @Override
+    public int compareTo(SecuredObjectType o) {
+        return getName().compareTo(o.getName());
     }
 
     @Override
@@ -70,18 +98,36 @@ public final class SecuredObjectType implements Serializable {
         return name;
     }
 
+    // Lists & list items:
 
-    // TODO Delete if really unused. If used, register with READ and UPDATE_PERMISSIONS permissions (as it was previously).
-//    public static final SecuredObjectType NONE = new SecuredObjectType(0, "NONE");
+    public static final SecuredObjectType EXECUTORS = new SecuredObjectType("EXECUTORS");
+    public static final SecuredObjectType ACTOR = new SecuredObjectType("ACTOR", EXECUTORS);
+    public static final SecuredObjectType GROUP = new SecuredObjectType("GROUP", EXECUTORS);
 
+    /**
+     * @deprecated Fake, don't use. Hack added to support NamedIdentityType in scripts.
+     * TODO Dofs wanted to merge ACTOR and GROUP types into EXECUTOR, this would be good.
+     */
+    @Deprecated
+    public static final SecuredObjectType EXECUTOR = new SecuredObjectType("EXECUTOR", EXECUTORS);
+
+    public static final SecuredObjectType DEFINITIONS = new SecuredObjectType("DEFINITIONS");
+    public static final SecuredObjectType DEFINITION = new SecuredObjectType("DEFINITION", DEFINITIONS);
+
+    public static final SecuredObjectType PROCESSES = new SecuredObjectType("PROCESSES");
+    public static final SecuredObjectType PROCESS = new SecuredObjectType("PROCESS", PROCESSES);
+
+    public static final SecuredObjectType REPORTS = new SecuredObjectType("REPORTS");
+    public static final SecuredObjectType REPORT = new SecuredObjectType("REPORT", REPORTS);
+
+    // Standalone singleton types, alphabetically:
+
+    public static final SecuredObjectType BOTSTATIONS = new SecuredObjectType("BOTSTATIONS");
+    public static final SecuredObjectType DATAFILE = new SecuredObjectType("DATAFILE");
+    public static final SecuredObjectType ERRORS = new SecuredObjectType("ERRORS");
+    public static final SecuredObjectType LOGS = new SecuredObjectType("LOGS");
+    public static final SecuredObjectType RELATIONS = new SecuredObjectType("RELATIONS");
+    public static final SecuredObjectType SCRIPTS = new SecuredObjectType("SCRIPTS");
+    public static final SecuredObjectType SUBSTITUTION_CRITERIAS = new SecuredObjectType("SUBSTITUTION_CRITERIAS");
     public static final SecuredObjectType SYSTEM = new SecuredObjectType("SYSTEM");
-    public static final SecuredObjectType BOTSTATION = new SecuredObjectType("BOTSTATION");
-    public static final SecuredObjectType ACTOR = new SecuredObjectType("ACTOR");
-    public static final SecuredObjectType GROUP = new SecuredObjectType("GROUP");
-    public static final SecuredObjectType RELATION = new SecuredObjectType("RELATION");
-    public static final SecuredObjectType RELATIONGROUP = new SecuredObjectType("RELATIONGROUP");
-    public static final SecuredObjectType RELATIONPAIR = new SecuredObjectType("RELATIONPAIR");
-    public static final SecuredObjectType DEFINITION = new SecuredObjectType("DEFINITION");
-    public static final SecuredObjectType PROCESS = new SecuredObjectType("PROCESS");
-    public static final SecuredObjectType REPORT = new SecuredObjectType("REPORT");
 }

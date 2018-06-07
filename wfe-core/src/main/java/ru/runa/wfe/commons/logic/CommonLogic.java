@@ -19,14 +19,15 @@ package ru.runa.wfe.commons.logic;
 
 import com.google.common.collect.Lists;
 import java.util.List;
-import javax.security.auth.Subject;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import ru.runa.wfe.commons.PropertyResources;
 import ru.runa.wfe.commons.dao.Localization;
 import ru.runa.wfe.commons.dao.LocalizationDAO;
 import ru.runa.wfe.commons.dao.SettingDAO;
+import ru.runa.wfe.commons.querydsl.HibernateQueryFactory;
 import ru.runa.wfe.execution.dao.ProcessDAO;
 import ru.runa.wfe.presentation.BatchPresentation;
 import ru.runa.wfe.security.AuthorizationException;
@@ -57,14 +58,20 @@ public class CommonLogic {
     @Autowired
     protected SettingDAO settingDAO;
 
+    // For the sake of mering DAO and logic layers:
+    @Autowired
+    protected SessionFactory sessionFactory;
+    @Autowired
+    protected HibernateQueryFactory queryFactory;
+
     protected <T extends Executor> T checkPermissionsOnExecutor(User user, T executor, Permission permission) {
-        if (executor.getName().equals(SystemExecutors.PROCESS_STARTER_NAME) && permission.equals(Permission.READ)) {
+        if (executor.getName().equals(SystemExecutors.PROCESS_STARTER_NAME) && permission.equals(Permission.LIST)) {
             return executor;
         }
-        if (executor instanceof TemporaryGroup && permission.equals(Permission.READ)) {
+        if (executor instanceof TemporaryGroup && permission.equals(Permission.LIST)) {
             return executor;
         }
-        checkPermissionAllowed(user, executor, permission);
+        permissionDAO.checkAllowed(user, permission, executor);
         return executor;
     }
 
@@ -73,16 +80,6 @@ public class CommonLogic {
             checkPermissionsOnExecutor(user, executor, permission);
         }
         return executors;
-    }
-
-    protected void checkPermissionAllowed(User user, SecuredObject securedObject, Permission permission) throws AuthorizationException {
-        if (!isPermissionAllowed(user, securedObject, permission)) {
-            throw new AuthorizationException(user + " does not have " + permission + " to " + securedObject);
-        }
-    }
-
-    public boolean isPermissionAllowed(User user, SecuredObject securedObject, Permission permission) {
-        return permissionDAO.isAllowed(user, permission, securedObject);
     }
 
     public <T extends SecuredObject> void isPermissionAllowed(User user, List<T> securedObjects, Permission permission,
@@ -110,14 +107,14 @@ public class CommonLogic {
 
     /**
      * Load objects list according to {@linkplain BatchPresentation} with permission check for subject.
-     * 
-     * @param subject
-     *            Current actor {@linkplain Subject}.
+     *
+     * @param user
+     *            Current actor {@linkplain User}.
      * @param batchPresentation
      *            {@linkplain BatchPresentation} to load objects.
      * @param permission
      *            {@linkplain Permission}, which current actor must have on loaded objects.
-     * @param securedObjectClasses
+     * @param securedObjectTypes
      *            Classes, loaded by query. Must be subset of classes, loaded by {@linkplain BatchPresentation}. For example {@linkplain Actor} for
      *            {@linkplain BatchPresentation}, which loads {@linkplain Executor}.
      * @param enablePaging
@@ -125,21 +122,21 @@ public class CommonLogic {
      * @return Loaded according to {@linkplain BatchPresentation} objects list.
      */
     @SuppressWarnings("unchecked")
-    public <T extends Object> List<T> getPersistentObjects(User user, BatchPresentation batchPresentation, Permission permission,
+    public <T> List<T> getPersistentObjects(User user, BatchPresentation batchPresentation, Permission permission,
             SecuredObjectType[] securedObjectTypes, boolean enablePaging) {
         return (List<T>) permissionDAO.getPersistentObjects(user, batchPresentation, permission, securedObjectTypes, enablePaging);
     }
 
     /**
      * Load objects count according to {@linkplain BatchPresentation} with permission check for subject.
-     * 
-     * @param subject
-     *            Current actor {@linkplain Subject}.
+     *
+     * @param user
+     *            Current actor {@linkplain User}.
      * @param batchPresentation
      *            {@linkplain BatchPresentation} to load objects count.
      * @param permission
      *            {@linkplain Permission}, which current actor must have on loaded objects.
-     * @param securedObjectClasses
+     * @param securedObjectTypes
      *            Classes, loaded by query. Must be subset of classes, loaded by {@linkplain BatchPresentation}. For example {@linkplain Actor} for
      *            {@linkplain BatchPresentation}, which loads {@linkplain Executor}.
      * @return Objects count, which will be loaded according to {@linkplain BatchPresentation}.

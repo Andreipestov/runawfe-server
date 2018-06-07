@@ -24,16 +24,18 @@ package ru.runa.wfe.task.dao;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-
+import org.springframework.stereotype.Component;
 import ru.runa.wfe.commons.dao.GenericDAO;
 import ru.runa.wfe.execution.ExecutionStatus;
 import ru.runa.wfe.execution.Process;
 import ru.runa.wfe.execution.Swimlane;
 import ru.runa.wfe.execution.Token;
+import ru.runa.wfe.task.QTask;
 import ru.runa.wfe.task.Task;
 import ru.runa.wfe.task.TaskDoesNotExistException;
 import ru.runa.wfe.user.Executor;
 
+@Component
 @SuppressWarnings("unchecked")
 public class TaskDAO extends GenericDAO<Task> {
 
@@ -45,60 +47,71 @@ public class TaskDAO extends GenericDAO<Task> {
     }
 
     public List<Task> findByExecutor(Executor executor) {
-        return getHibernateTemplate().find("from Task where executor=?", executor);
+        QTask t = QTask.task;
+        return queryFactory.selectFrom(t).where(t.executor.eq(executor)).fetch();
     }
 
     public List<Task> findByProcess(Process process) {
-        return getHibernateTemplate().find("from Task where process=?", process);
+        QTask t = QTask.task;
+        return queryFactory.selectFrom(t).where(t.process.eq(process)).fetch();
     }
 
     public List<Task> findByProcessAndSwimlane(Process process, Swimlane swimlane) {
-        return getHibernateTemplate().find("from Task where process=? and swimlane=?", process, swimlane);
+        QTask t = QTask.task;
+        return queryFactory.selectFrom(t).where(t.process.eq(process).and(t.swimlane.eq(swimlane))).fetch();
     }
 
     public List<Task> findByProcessAndNodeId(Process process, String nodeId) {
-        return getHibernateTemplate().find("from Task where process=? and nodeId=?", process, nodeId);
+        QTask t = QTask.task;
+        return queryFactory.selectFrom(t).where(t.process.eq(process).and(t.nodeId.eq(nodeId))).fetch();
     }
 
     public List<Task> findByProcessAndDeadlineExpressionContaining(Process process, String expression) {
-        return getHibernateTemplate().find("from Task where process=? and deadlineDateExpression like ?", process, "%" + expression + "%");
+        QTask t = QTask.task;
+        return queryFactory.selectFrom(t).where(t.process.eq(process).and(t.deadlineDateExpression.like("%" + expression + "%"))).fetch();
     }
 
     public List<Task> findByToken(Token token) {
-        return getHibernateTemplate().find("from Task where token=?", token);
+        QTask t = QTask.task;
+        return queryFactory.selectFrom(t).where(t.token.eq(token)).fetch();
     }
 
     /**
      * @return active tasks but not assigned.
      */
     public List<Task> findUnassignedTasksInActiveProcesses() {
-        return getHibernateTemplate().find("from Task where executor is null and token.executionStatus != ?", ExecutionStatus.SUSPENDED);
+        QTask t = QTask.task;
+        return queryFactory.selectFrom(t).where(t.executor.isNull().and(t.token.executionStatus.ne(ExecutionStatus.SUSPENDED))).fetch();
     }
 
     public List<Task> findUnassignedTasks() {
-        return getHibernateTemplate().find("from Task where executor is null");
+        QTask t = QTask.task;
+        return queryFactory.selectFrom(t).where(t.executor.isNull()).fetch();
     }
 
     /**
      * @return tasks, opened by user.
      */
-    public List<Long> getOpenedTasks(Long actorId, List<Long> tasksIds) {
-        if (tasksIds.isEmpty()) {
-            return new ArrayList<Long>();
+    public List<Long> getOpenedTasks(Long actorId, List<Long> taskIds) {
+        if (taskIds.isEmpty()) {
+            return new ArrayList<>();
         }
-        return getHibernateTemplate().findByNamedParam("select id from Task where :actorId in elements(openedByExecutorIds) and id in (:tasksIds)",
-                new String[] { "actorId", "tasksIds" }, new Object[] { actorId, tasksIds });
+        return sessionFactory.getCurrentSession()
+                .createQuery("select id from Task where :actorId in elements(openedByExecutorIds) and id in (:taskIds)")
+                .setParameter("actorId", actorId).setParameter("taskIds", taskIds).list();
     }
 
     /**
      * @return return all expired tasks.
      */
     public List<Task> getAllExpiredTasks(Date curDate) {
-        return getHibernateTemplate().find("from Task where deadlineDate < ?", curDate);
+        QTask t = QTask.task;
+        return queryFactory.selectFrom(t).where(t.deadlineDate.lt(curDate)).fetch();
     }
 
     public void deleteAll(Process process) {
         log.debug("deleting tasks for process " + process.getId());
-        getHibernateTemplate().bulkUpdate("delete from Task where process=?", process);
+        QTask t = QTask.task;
+        queryFactory.delete(t).where(t.process.eq(process)).execute();
     }
 }

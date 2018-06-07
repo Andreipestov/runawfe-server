@@ -38,17 +38,6 @@ public interface VariableLoader {
     List<Variable<?>> findByNameLikeAndStringValueEqualTo(String variableNamePattern, String stringValue);
 
     /**
-     * Find all variables in active processes, which name is like namePattern and value is equals to stringValue.
-     *
-     * @param variableNamePattern
-     *            Variable name pattern, which may be exact match or contains wildcards for like search.
-     * @param stringValue
-     *            Exact string variable value.
-     * @return all variable, found by criteria.
-     */
-    List<Variable<?>> findInActiveProcessesByNameLikeAndStringValueEqualTo(String variableNamePattern, String stringValue);
-
-    /**
      * Load all variables for given process.
      *
      * @param process

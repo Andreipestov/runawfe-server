@@ -34,14 +34,6 @@ public final class IdentifiebleSetConvertions {
         return groups;
     }
 
-    public static Set<SecuredObject> getRelations(ScriptExecutionContext context, Set<String> relationNames) {
-        Set<SecuredObject> relations = Sets.newHashSet();
-        for (String groupName : relationNames) {
-            relations.add(context.getRelationLogic().getRelation(context.getUser(), groupName));
-        }
-        return relations;
-    }
-
     public static Set<SecuredObject> getProcessDefinitions(ScriptExecutionContext context, Set<String> processDefinitionNames) {
         Set<SecuredObject> processDefinitions = Sets.newHashSet();
         for (String definitionName : processDefinitionNames) {
@@ -54,7 +46,7 @@ public final class IdentifiebleSetConvertions {
         Set<SecuredObject> processInstances = Sets.newHashSet();
         for (String definitionName : processDefinitionNames) {
             BatchPresentation batchPresentation = BatchPresentationFactory.PROCESSES.createNonPaged();
-            int definitionNameIndex = batchPresentation.getClassPresentation().getFieldIndex(ProcessClassPresentation.DEFINITION_NAME);
+            int definitionNameIndex = batchPresentation.getType().getFieldIndex(ProcessClassPresentation.DEFINITION_NAME);
             batchPresentation.getFilteredFields().put(definitionNameIndex, new StringFilterCriteria(definitionName));
             processInstances.addAll(context.getExecutionLogic().getProcesses(context.getUser(), batchPresentation));
         }

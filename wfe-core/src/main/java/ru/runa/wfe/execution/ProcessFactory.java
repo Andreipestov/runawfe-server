@@ -1,13 +1,13 @@
 package ru.runa.wfe.execution;
 
+import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.springframework.beans.factory.annotation.Autowired;
-
 import ru.runa.wfe.audit.ProcessStartLog;
 import ru.runa.wfe.audit.SubprocessStartLog;
 import ru.runa.wfe.commons.CollectionUtil;
@@ -26,9 +26,6 @@ import ru.runa.wfe.user.Executor;
 import ru.runa.wfe.user.SystemExecutors;
 import ru.runa.wfe.user.dao.ExecutorDAO;
 
-import com.google.common.base.Objects;
-import com.google.common.base.Preconditions;
-
 public class ProcessFactory {
     @Autowired
     private ProcessDAO processDAO;
@@ -41,19 +38,17 @@ public class ProcessFactory {
     @Autowired
     private SwimlaneDAO swimlaneDAO;
 
-    private static final Map<Permission, Permission> DEFINITION_TO_PROCESS_PERMISSION_MAP;
-    static {
-        DEFINITION_TO_PROCESS_PERMISSION_MAP = new HashMap<>();
-        DEFINITION_TO_PROCESS_PERMISSION_MAP.put(Permission.READ_PROCESS, Permission.READ);
-        DEFINITION_TO_PROCESS_PERMISSION_MAP.put(Permission.CANCEL_PROCESS, Permission.CANCEL_PROCESS);
-    }
+    private static final Map<Permission, Permission> DEFINITION_TO_PROCESS_PERMISSION_MAP = new HashMap<Permission, Permission>() {{
+        put(Permission.READ_PROCESS, Permission.READ);
+        put(Permission.CANCEL_PROCESS, Permission.CANCEL);
+    }};
 
     private Set<Permission> getProcessPermissions(Executor executor, ProcessDefinition processDefinition) {
-        List<Permission> definitionPermissions = permissionDAO.getIssuedPermissions(executor, processDefinition.getDeployment());
         Set<Permission> result = new HashSet<>();
-        for (Permission p : definitionPermissions) {
-            if (DEFINITION_TO_PROCESS_PERMISSION_MAP.containsKey(p)) {
-                result.add(DEFINITION_TO_PROCESS_PERMISSION_MAP.get(p));
+        for (Map.Entry<Permission, Permission> kv : DEFINITION_TO_PROCESS_PERMISSION_MAP.entrySet()) {
+            // Using isAllowed() because it takes DEFINITIONS list & executor groups into account.
+            if (permissionDAO.isAllowed(executor, kv.getKey(), processDefinition.getDeployment(), false)) {
+                result.add(kv.getValue());
             }
         }
         return result;
@@ -78,11 +73,11 @@ public class ProcessFactory {
 
     private void grantProcessPermissions(ProcessDefinition processDefinition, Process process, Actor actor) {
         boolean permissionsAreSetToProcessStarter = false;
+        Executor processStarter = executorDAO.getExecutor(SystemExecutors.PROCESS_STARTER_NAME);
+        Set<Permission> processStarterPermissions = getProcessPermissions(processStarter, processDefinition);
         for (Executor executor : permissionDAO.getExecutorsWithPermission(processDefinition.getDeployment())) {
             Set<Permission> permissions = getProcessPermissions(executor, processDefinition);
             if (Objects.equal(actor, executor)) {
-                Executor processStarter = executorDAO.getExecutor(SystemExecutors.PROCESS_STARTER_NAME);
-                Set<Permission> processStarterPermissions = getProcessPermissions(processStarter, processDefinition);
                 permissions = CollectionUtil.unionSet(permissions, processStarterPermissions);
                 permissionsAreSetToProcessStarter = true;
             }
@@ -91,8 +86,6 @@ public class ProcessFactory {
             }
         }
         if (!permissionsAreSetToProcessStarter) {
-            Executor processStarter = executorDAO.getExecutor(SystemExecutors.PROCESS_STARTER_NAME);
-            Set<Permission> processStarterPermissions = getProcessPermissions(processStarter, processDefinition);
             permissionDAO.setPermissions(actor, processStarterPermissions, process);
         }
     }

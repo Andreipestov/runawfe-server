@@ -20,10 +20,8 @@ package ru.runa.af.web.tag;
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.apache.ecs.html.TD;
 import org.tldgen.annotations.BodyContent;
 import ru.runa.af.web.BatchPresentationUtils;
@@ -45,13 +43,12 @@ import ru.runa.wfe.presentation.BatchPresentation;
 import ru.runa.wfe.presentation.BatchPresentationFactory;
 import ru.runa.wfe.presentation.FieldDescriptor;
 import ru.runa.wfe.relation.Relation;
-import ru.runa.wfe.relation.RelationPair;
 import ru.runa.wfe.security.Permission;
 import ru.runa.wfe.service.delegate.Delegates;
 import ru.runa.wfe.user.Executor;
 
 /**
- * List relations in which executor exists in right side.
+ * List relations which contain executor on the right side.
  */
 @org.tldgen.annotations.Tag(bodyContent = BodyContent.JSP, name = "listExecutorRightRelationsForm")
 public class ListExecutorRightRelationsFormTag extends SecuredObjectFormTag {
@@ -63,10 +60,7 @@ public class ListExecutorRightRelationsFormTag extends SecuredObjectFormTag {
         executors.add(getSecuredObject());
         BatchPresentation executorBatchPresentation = BatchPresentationFactory.GROUPS.createNonPaged();
         executors.addAll(Delegates.getExecutorService().getExecutorGroups(getUser(), getSecuredObject(), executorBatchPresentation, false));
-        Set<Relation> relations = new HashSet<>();
-        for (RelationPair pair : Delegates.getRelationService().getExecutorsRelationPairsRight(getUser(), null, executors)) {
-            relations.add(pair.getRelation());
-        }
+        List<Relation> relations = Delegates.getRelationService().getRelationsContainingExecutorsOnRight(getUser(), executors);
         TableBuilder tableBuilder = new TableBuilder();
         TDBuilder[] builders = BatchPresentationUtils.getBuilders(null, BatchPresentationFactory.RELATIONS.createDefault(), null);
         RowBuilder rowBuilder = new ReflectionRowBuilder(Lists.newArrayList(relations), executorBatchPresentation, pageContext,
@@ -81,7 +75,7 @@ public class ListExecutorRightRelationsFormTag extends SecuredObjectFormTag {
     }
 
     @Override
-    protected boolean isFormButtonVisible() {
+    protected boolean isSubmitButtonVisible() {
         return false;
     }
 
@@ -91,7 +85,7 @@ public class ListExecutorRightRelationsFormTag extends SecuredObjectFormTag {
     }
 
     @Override
-    protected Permission getPermission() {
+    protected Permission getSubmitPermission() {
         return Permission.READ;
     }
 

@@ -18,7 +18,6 @@
 package ru.runa.wf.web.tag;
 
 import javax.servlet.jsp.PageContext;
-
 import org.apache.ecs.Element;
 import org.apache.ecs.html.A;
 import org.apache.ecs.html.Div;
@@ -28,7 +27,6 @@ import org.apache.ecs.html.TD;
 import org.apache.ecs.html.TR;
 import org.apache.ecs.html.Table;
 import org.tldgen.annotations.BodyContent;
-
 import ru.runa.common.web.CategoriesSelectUtils;
 import ru.runa.common.web.Commons;
 import ru.runa.common.web.ConfirmationPopupHelper;
@@ -86,8 +84,8 @@ public class RedeployDefinitionFormTag extends ProcessDefinitionBaseFormTag {
     }
 
     @Override
-    protected Permission getPermission() {
-        return Permission.REDEPLOY_DEFINITION;
+    protected Permission getSubmitPermission() {
+        return Permission.UPDATE;
     }
 
     @Override
@@ -96,7 +94,7 @@ public class RedeployDefinitionFormTag extends ProcessDefinitionBaseFormTag {
     }
 
     @Override
-    protected String getFormButtonName() {
+    protected String getSubmitButtonName() {
         return MessagesProcesses.TITLE_REDEPLOY_DEFINITION.message(pageContext);
     }
 
@@ -112,7 +110,7 @@ public class RedeployDefinitionFormTag extends ProcessDefinitionBaseFormTag {
 
     @Override
     protected boolean isVisible() {
-        return Delegates.getAuthorizationService().isAllowed(getUser(), Permission.REDEPLOY_DEFINITION, getSecuredObject());
+        return Delegates.getAuthorizationService().isAllowed(getUser(), Permission.UPDATE, getDefinition());
     }
 
     private Element addUpgradeProcessesLink(WfDefinition definition) {

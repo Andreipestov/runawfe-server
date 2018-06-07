@@ -71,6 +71,7 @@ import ru.runa.wfe.commons.dbpatch.impl.NodeTypeChangePatch;
 import ru.runa.wfe.commons.dbpatch.impl.PerformancePatch401;
 import ru.runa.wfe.commons.dbpatch.impl.PermissionMappingPatch403;
 import ru.runa.wfe.commons.dbpatch.impl.RefactorPermissionsStep1;
+import ru.runa.wfe.commons.dbpatch.impl.RefactorPermissionsStep3;
 import ru.runa.wfe.commons.dbpatch.impl.TaskCreateLogSeverityChangedPatch;
 import ru.runa.wfe.commons.dbpatch.impl.TaskEndDateRemovalPatch;
 import ru.runa.wfe.commons.dbpatch.impl.TaskOpenedByExecutorsPatch;
@@ -84,7 +85,7 @@ import ru.runa.wfe.user.dao.ExecutorDAO;
 
 /**
  * Initial DB population and update during version change.
- * 
+ *
  * @author Dofs
  */
 public class InitializerLogic implements ApplicationListener<ContextRefreshedEvent> {
@@ -165,6 +166,7 @@ public class InitializerLogic implements ApplicationListener<ContextRefreshedEve
         patches.add(AddSubprocessBindingDatePatch.class);
         patches.add(AddTransactionalBotSupport.class);
         patches.add(RefactorPermissionsStep1.class);
+        patches.add(RefactorPermissionsStep3.class);
         dbPatches = Collections.unmodifiableList(patches);
     }
 
@@ -186,7 +188,7 @@ public class InitializerLogic implements ApplicationListener<ContextRefreshedEve
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
         try {
-            ApplicationContextFactory.setApplicationContext(event.getApplicationContext());
+            // ApplicationContextFactory.setApplicationContext(event.getApplicationContext());
             log.info("initializing database");
             Integer databaseVersion = constantDAO.getDatabaseVersion();
             if (databaseVersion != null) {

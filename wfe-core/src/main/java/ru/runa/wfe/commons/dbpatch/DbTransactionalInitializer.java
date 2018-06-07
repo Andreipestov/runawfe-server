@@ -62,18 +62,9 @@ public class DbTransactionalInitializer {
         List<? extends Executor> adminWithGroupExecutors = Lists.newArrayList(adminGroup, admin);
         executorDAO.addExecutorToGroup(admin, adminGroup);
         executorDAO.create(new Actor(SystemExecutors.PROCESS_STARTER_NAME, SystemExecutors.PROCESS_STARTER_DESCRIPTION));
-        // define executor permissions
-        permissionDAO.addType(SecuredObjectType.ACTOR, adminWithGroupExecutors);
-        permissionDAO.addType(SecuredObjectType.GROUP, adminWithGroupExecutors);
-        // define system permissions
-        permissionDAO.addType(SecuredObjectType.SYSTEM, adminWithGroupExecutors);
-        permissionDAO.addType(SecuredObjectType.RELATIONGROUP, adminWithGroupExecutors);
-        permissionDAO.addType(SecuredObjectType.RELATION, adminWithGroupExecutors);
-        permissionDAO.addType(SecuredObjectType.RELATIONPAIR, adminWithGroupExecutors);
-        permissionDAO.addType(SecuredObjectType.BOTSTATION, adminWithGroupExecutors);
-        permissionDAO.addType(SecuredObjectType.DEFINITION, adminWithGroupExecutors);
-        permissionDAO.addType(SecuredObjectType.PROCESS, adminWithGroupExecutors);
-        permissionDAO.addType(SecuredObjectType.REPORT, adminWithGroupExecutors);
+        for (SecuredObjectType t : SecuredObjectType.values()) {
+            permissionDAO.addType(t, adminWithGroupExecutors);
+        }
     }
 
 }

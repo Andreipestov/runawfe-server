@@ -19,6 +19,9 @@ package ru.runa.wfe.service.delegate;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.dom4j.Document;
 import ru.runa.wfe.presentation.BatchPresentation;
 import ru.runa.wfe.security.Permission;
 import ru.runa.wfe.security.SecuredObject;
@@ -39,6 +42,24 @@ public class AuthorizationServiceDelegate extends EJB3Delegate implements Author
 
     private AuthorizationService getAuthorizationService() {
         return (AuthorizationService) getService();
+    }
+
+    @Override
+    public void checkAllowed(User user, Permission permission, SecuredObject securedObject) {
+        try {
+            getAuthorizationService().checkAllowed(user, permission, securedObject);
+        } catch (Exception e) {
+            throw handleException(e);
+        }
+    }
+
+    @Override
+    public void checkAllowed(User user, Permission permission, SecuredObjectType type, Long id) {
+        try {
+            getAuthorizationService().checkAllowed(user, permission, type, id);
+        } catch (Exception e) {
+            throw handleException(e);
+        }
     }
 
     @Override
@@ -72,6 +93,69 @@ public class AuthorizationServiceDelegate extends EJB3Delegate implements Author
     public boolean isAllowedForAny(User user, Permission permission, SecuredObjectType securedObjectTypes) {
         try {
             return getAuthorizationService().isAllowedForAny(user, permission, securedObjectTypes);
+        } catch (Exception e) {
+            throw handleException(e);
+        }
+    }
+
+    @Override
+    public boolean isAllowedUpdateExecutor(User user, Executor object) {
+        try {
+            return getAuthorizationService().isAllowedUpdateExecutor(user, object);
+        } catch (Exception e) {
+            throw handleException(e);
+        }
+    }
+
+    @Override
+    public boolean isAllowedUpdateExecutor(User user, Long id) {
+        try {
+            return getAuthorizationService().isAllowedUpdateExecutor(user, id);
+        } catch (Exception e) {
+            throw handleException(e);
+        }
+    }
+
+    @Override
+    public void exportDataFile(User user, Document script) {
+        try {
+            getAuthorizationService().exportDataFile(user, script);
+        } catch (Exception e) {
+            throw handleException(e);
+        }
+    }
+
+    @Override
+    public void addPermissions(User user, String executorName, Map<SecuredObjectType, Set<String>> objectNames, Set<Permission> permissions) {
+        try {
+            getAuthorizationService().addPermissions(user, executorName, objectNames, permissions);
+        } catch (Exception e) {
+            throw handleException(e);
+        }
+    }
+
+    @Override
+    public void removePermissions(User user, String executorName, Map<SecuredObjectType, Set<String>> objectNames, Set<Permission> permissions) {
+        try {
+            getAuthorizationService().removePermissions(user, executorName, objectNames, permissions);
+        } catch (Exception e) {
+            throw handleException(e);
+        }
+    }
+
+    @Override
+    public void removeAllPermissions(User user, String executorName, Map<SecuredObjectType, Set<String>> objectNames) {
+        try {
+            getAuthorizationService().removeAllPermissions(user, executorName, objectNames);
+        } catch (Exception e) {
+            throw handleException(e);
+        }
+    }
+
+    @Override
+    public void setPermissions(User user, String executorName, Map<SecuredObjectType, Set<String>> objectNames, Set<Permission> permissions) {
+        try {
+            getAuthorizationService().setPermissions(user, executorName, objectNames, permissions);
         } catch (Exception e) {
             throw handleException(e);
         }

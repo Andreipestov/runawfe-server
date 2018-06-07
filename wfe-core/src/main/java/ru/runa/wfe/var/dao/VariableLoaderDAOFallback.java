@@ -56,12 +56,6 @@ public class VariableLoaderDAOFallback extends AbstractVariableLoader {
     }
 
     @Override
-    public List<Variable<?>> findInActiveProcessesByNameLikeAndStringValueEqualTo(String variableNamePattern, String stringValue) {
-        // CREATE INDEX IX_PROCESS_STATUS ON BPM_PROCESS (EXECUTION_STATUS);
-        return dao.findInActiveProcessesByNameLikeAndStringValueEqualTo(variableNamePattern, stringValue);
-    }
-
-    @Override
     public Map<String, Object> getAll(Process process) {
         return dao.getAll(process);
     }

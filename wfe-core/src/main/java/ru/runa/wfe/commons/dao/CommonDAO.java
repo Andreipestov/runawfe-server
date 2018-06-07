@@ -1,10 +1,11 @@
 package ru.runa.wfe.commons.dao;
 
-import java.util.List;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.springframework.orm.hibernate3.support.HibernateDaoSupport;
+import org.hibernate.Query;
+import org.hibernate.SessionFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.support.DaoSupport;
+import org.springframework.util.Assert;
+import ru.runa.wfe.commons.querydsl.HibernateQueryFactory;
 
 /**
  * Common DAO implementation with useful operations.
@@ -13,40 +14,42 @@ import org.springframework.orm.hibernate3.support.HibernateDaoSupport;
  * @since 4.0
  */
 @SuppressWarnings("unchecked")
-public abstract class CommonDAO extends HibernateDaoSupport {
-    protected static final Log log = LogFactory.getLog(CommonDAO.class);
+public abstract class CommonDAO extends DaoSupport {
+
+    @Autowired
+    protected SessionFactory sessionFactory;
+    @Autowired
+    protected HibernateQueryFactory queryFactory;
+
+    @Override
+    protected final void checkDaoConfig() throws IllegalArgumentException {
+        Assert.notNull(sessionFactory);
+        Assert.notNull(queryFactory);
+    }
 
     /**
      * Load entity from database by id.
      * 
      * @return entity or <code>null</code> if no entity found.
      */
-    protected <T extends Object> T get(Class<T> clazz, Long id) {
-        return getHibernateTemplate().get(clazz, id);
-    }
-
-    /**
-     * @return first entity from list or <code>null</code>
-     */
-    protected <T extends Object> T getFirstOrNull(List<T> list) {
-        if (list.size() > 0) {
-            return list.get(0);
-        }
-        return null;
+    protected <T> T get(Class<T> clazz, Long id) {
+        return (T)sessionFactory.getCurrentSession().get(clazz, id);
     }
 
     /**
      * Finds entities.
-     * 
+     *
      * @param hql
      *            Hibernate query
      * @param parameters
      *            query parameters
      * @return first entity from list or <code>null</code>
      */
-    protected <T extends Object> T findFirstOrNull(String hql, Object... parameters) {
-        List<T> list = (List<T>) getHibernateTemplate().find(hql, parameters);
-        return getFirstOrNull(list);
+    protected <T> T findFirstOrNull(String hql, Object... parameters) {
+        Query q = sessionFactory.getCurrentSession().createQuery(hql);
+        for (int i = 0; i < parameters.length; i++) {
+            q.setParameter(i, parameters[i]);
+        }
+        return (T)q.setMaxResults(1).uniqueResult();
     }
-
 }

@@ -60,7 +60,7 @@ import ru.runa.wfe.user.Executor;
  * @author Gritsenko_S
  */
 public class ReflectionRowBuilder implements RowBuilder {
-    protected final List<? extends Object> items;
+    protected final List<?> items;
     protected final BatchPresentation batchPresentation;
     protected GroupState currentState;
     protected final String returnAction;

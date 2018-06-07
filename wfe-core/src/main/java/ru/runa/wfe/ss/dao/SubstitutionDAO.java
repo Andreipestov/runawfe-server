@@ -1,7 +1,7 @@
 /*
  * This file is part of the RUNA WFE project.
  * 
- * This program is free software; you can redistribute it and/or 
+ * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License 
  * as published by the Free Software Foundation; version 2.1 
  * of the License. 
@@ -17,26 +17,22 @@
  */
 package ru.runa.wfe.ss.dao;
 
+import com.google.common.collect.Lists;
 import java.util.Date;
 import java.util.List;
-
-import org.hibernate.Query;
-import org.hibernate.Session;
-import org.springframework.orm.hibernate3.HibernateCallback;
-
+import org.springframework.stereotype.Component;
 import ru.runa.wfe.commons.dao.GenericDAO;
+import ru.runa.wfe.ss.QSubstitution;
 import ru.runa.wfe.ss.Substitution;
 import ru.runa.wfe.ss.SubstitutionDoesNotExistException;
 import ru.runa.wfe.user.Actor;
-
-import com.google.common.collect.Lists;
 
 /**
  * DAO level interface for managing {@linkplain Substitution}'s.
  * 
  * @since 2.0
  */
-@SuppressWarnings("unchecked")
+@Component
 public class SubstitutionDAO extends GenericDAO<Substitution> {
 
     @Override
@@ -57,22 +53,15 @@ public class SubstitutionDAO extends GenericDAO<Substitution> {
      * {@linkplain Substitution}'s order is not specified.
      * 
      * @param ids
-     *            {@linkplain Substitution}'s identity to load.
-     * @return Loaded {@linkplain Substitution}'s.
+     *            {@linkplain Substitution}s identity to load.
+     * @return Loaded {@linkplain Substitution}s.
      */
-    public List<Substitution> get(final List<Long> substitutionIds) {
-        if (substitutionIds.size() == 0) {
+    public List<Substitution> get(List<Long> ids) {
+        if (ids.isEmpty()) {
             return Lists.newArrayList();
         }
-        return (List<Substitution>) getHibernateTemplate().executeFind(new HibernateCallback<List<Substitution>>() {
-
-            @Override
-            public List<Substitution> doInHibernate(Session session) {
-                Query query = session.createQuery("from Substitution where id in (:ids)");
-                query.setParameterList("ids", substitutionIds);
-                return query.list();
-            }
-        });
+        QSubstitution s = QSubstitution.substitution;
+        return queryFactory.selectFrom(s).where(s.id.in(ids)).fetch();
     }
 
     /**
@@ -85,8 +74,10 @@ public class SubstitutionDAO extends GenericDAO<Substitution> {
      * @return {@linkplain Substitution}'s for {@linkplain Actor}.
      */
     public List<Substitution> getByActorId(Long actorId, boolean orderByPositionAscending) {
-        String order = orderByPositionAscending ? "asc" : "desc";
-        return (List<Substitution>) getHibernateTemplate().find("from Substitution where actorId=? order by position " + order, actorId);
+        QSubstitution s = QSubstitution.substitution;
+        return queryFactory.selectFrom(s)
+                .where(s.actorId.eq(actorId)).orderBy(orderByPositionAscending ? s.position.asc() : s.position.desc())
+                .fetch();
     }
 
     public void deleteAllActorSubstitutions(Long actorId) {

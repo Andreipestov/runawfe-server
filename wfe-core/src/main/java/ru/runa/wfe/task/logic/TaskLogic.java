@@ -5,7 +5,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +33,7 @@ import ru.runa.wfe.lang.ProcessDefinition;
 import ru.runa.wfe.lang.Synchronizable;
 import ru.runa.wfe.lang.Transition;
 import ru.runa.wfe.presentation.BatchPresentation;
+import ru.runa.wfe.presentation.ClassPresentationType;
 import ru.runa.wfe.presentation.hibernate.CompilerParameters;
 import ru.runa.wfe.presentation.hibernate.PresentationCompiler;
 import ru.runa.wfe.security.ApplicablePermissions;
@@ -44,7 +44,6 @@ import ru.runa.wfe.task.TaskAlreadyAcceptedException;
 import ru.runa.wfe.task.TaskCompletionBy;
 import ru.runa.wfe.task.TaskCompletionInfo;
 import ru.runa.wfe.task.TaskDoesNotExistException;
-import ru.runa.wfe.task.TaskObservableClassPresentation;
 import ru.runa.wfe.task.dto.WfTask;
 import ru.runa.wfe.task.dto.WfTaskFactory;
 import ru.runa.wfe.user.Actor;
@@ -209,7 +208,7 @@ public class TaskLogic extends WFCommonLogic {
     }
 
     public List<WfTask> getTasks(User user, BatchPresentation batchPresentation) {
-        if (batchPresentation.getClassPresentation() instanceof TaskObservableClassPresentation) {
+        if (batchPresentation.getType() == ClassPresentationType.TASK_OBSERVABLE) {
             return observableTaskListBuilder.getObservableTasks(user.getActor(), batchPresentation);
         }
         if (!executorLogic.isAdministrator(user)) {
@@ -232,14 +231,14 @@ public class TaskLogic extends WFCommonLogic {
     public List<WfTask> getTasks(User user, Long processId, boolean includeSubprocesses) throws ProcessDoesNotExistException {
         List<WfTask> result = Lists.newArrayList();
         Process process = processDAO.getNotNull(processId);
-        checkPermissionAllowed(user, process, Permission.READ);
+        permissionDAO.checkAllowed(user, Permission.LIST, process);
         for (Task task : taskDAO.findByProcess(process)) {
             result.add(taskObjectFactory.create(task, user.getActor(), false, null));
         }
         if (includeSubprocesses) {
             List<Process> subprocesses = nodeProcessDAO.getSubprocessesRecursive(process);
             for (Process subprocess : subprocesses) {
-                checkPermissionAllowed(user, subprocess, Permission.READ);
+                permissionDAO.checkAllowed(user, Permission.LIST, subprocess);
                 for (Task task : taskDAO.findByProcess(subprocess)) {
                     result.add(taskObjectFactory.create(task, user.getActor(), false, null));
                 }
@@ -275,7 +274,7 @@ public class TaskLogic extends WFCommonLogic {
             }
         }
         DelegationGroup delegationGroup = DelegationGroup.create(user, task.getProcess().getId(), taskId);
-        List<Permission> selfPermissions = Lists.newArrayList(Permission.READ, Permission.LIST_GROUP);
+        List<Permission> selfPermissions = Lists.newArrayList(Permission.READ);
         if (executorDAO.isExecutorExist(delegationGroup.getName())) {
             delegationGroup = (DelegationGroup) executorDAO.getExecutor(delegationGroup.getName());
             Set<Executor> oldExecutors = executorDAO.getGroupChildren(delegationGroup);
@@ -284,7 +283,7 @@ public class TaskLogic extends WFCommonLogic {
             executorDAO.create(delegationGroup);
         }
         if (SystemProperties.setPermissionsToTemporaryGroups()) {
-            permissionDAO.setPermissions(user.getActor(), ApplicablePermissions.list(delegationGroup), delegationGroup);
+            permissionDAO.setPermissions(user.getActor(), ApplicablePermissions.listVisible(delegationGroup), delegationGroup);
             permissionDAO.setPermissions(delegationGroup, selfPermissions, delegationGroup);
         }
         executorDAO.addExecutorsToGroup(executors, delegationGroup);

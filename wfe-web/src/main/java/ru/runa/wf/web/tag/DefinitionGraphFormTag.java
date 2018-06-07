@@ -47,7 +47,7 @@ public class DefinitionGraphFormTag extends ProcessDefinitionBaseFormTag {
         return subprocessId;
     }
 
-    @Attribute(required = false, rtexprvalue = true)
+    @Attribute
     public void setSubprocessId(String subprocessId) {
         this.subprocessId = subprocessId;
     }
@@ -74,12 +74,12 @@ public class DefinitionGraphFormTag extends ProcessDefinitionBaseFormTag {
     }
 
     @Override
-    protected Permission getPermission() {
-        return Permission.READ;
+    protected Permission getSubmitPermission() {
+        return Permission.LIST;
     }
 
     @Override
-    protected boolean isFormButtonVisible() {
+    protected boolean isSubmitButtonVisible() {
         return false;
     }
 
