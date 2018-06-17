@@ -188,13 +188,15 @@ public class InitializerLogic implements ApplicationListener<ContextRefreshedEve
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
         try {
-            // ApplicationContextFactory.setApplicationContext(event.getApplicationContext());
-            log.info("initializing database");
-            Integer databaseVersion = constantDAO.getDatabaseVersion();
-            if (databaseVersion != null) {
+            Integer databaseVersion = null;
+            try {
+                // Since now CMT is in use, getDatabaseVersion() may throw from AOP wrapper even if its body is wrapped into try-catch.
+                databaseVersion = constantDAO.getDatabaseVersion();
                 applyPatches(databaseVersion);
-            } else {
-                log.info("database is empty, initializing...");
+            } catch (Exception e) {
+                // This message was moved from ConstantDAO.getDatabaseVersion(), so continue logging it there for now.
+                LogFactory.getLog(ConstantDAO.class).warn("Unable to get database version", e);
+                log.info("initializing database");
                 SchemaExport schemaExport = new SchemaExport(ApplicationContextFactory.getConfiguration());
                 schemaExport.execute(true, true, false, true);
                 dbTransactionalInitializer.initialize(dbPatches.size());
