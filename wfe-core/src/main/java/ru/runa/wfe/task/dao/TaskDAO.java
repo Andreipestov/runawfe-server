@@ -96,13 +96,14 @@ public class TaskDAO extends GenericDAO<Task> {
         if (taskIds.isEmpty()) {
             return new ArrayList<>();
         }
-        return sessionFactory.getCurrentSession()
-                .createQuery("select id from Task where :actorId in elements(openedByExecutorIds) and id in (:taskIds)")
-                .setParameter("actorId", actorId).setParameter("taskIds", taskIds).list();
+        return sessionFactory.getCurrentSession().createQuery("select id from Task where :actorId in elements(openedByExecutorIds) and id in (:taskIds)")
+                .setParameter("actorId", actorId)
+                .setParameterList("taskIds", taskIds)
+                .list();
     }
 
     /**
-     * @return return all expired tasks.
+     * @return return all expired tasks
      */
     public List<Task> getAllExpiredTasks(Date curDate) {
         QTask t = QTask.task;
