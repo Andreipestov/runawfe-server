@@ -50,7 +50,7 @@ import ru.runa.wfe.presentation.BatchPresentation;
 import ru.runa.wfe.presentation.BatchPresentationFactory;
 import ru.runa.wfe.service.decl.ExecutionServiceLocal;
 import ru.runa.wfe.service.decl.ExecutionServiceRemote;
-import ru.runa.wfe.service.decl.ExecutionServiceRemoteWS;
+import ru.runa.wfe.service.decl.ExecutionWebServiceRemote;
 import ru.runa.wfe.service.interceptors.EjbExceptionSupport;
 import ru.runa.wfe.service.interceptors.EjbTransactionSupport;
 import ru.runa.wfe.service.interceptors.PerformanceObserver;
@@ -61,8 +61,8 @@ import ru.runa.wfe.user.Executor;
 import ru.runa.wfe.user.User;
 import ru.runa.wfe.var.dto.WfVariable;
 import ru.runa.wfe.var.dto.WfVariableHistoryState;
+import ru.runa.wfe.var.file.FileVariableImpl;
 import ru.runa.wfe.var.file.FileVariable;
-import ru.runa.wfe.var.file.IFileVariable;
 import ru.runa.wfe.var.logic.VariableLogic;
 
 import com.google.common.base.Preconditions;
@@ -72,7 +72,7 @@ import com.google.common.base.Preconditions;
 @Interceptors({ EjbExceptionSupport.class, PerformanceObserver.class, EjbTransactionSupport.class, SpringBeanAutowiringInterceptor.class })
 @WebService(name = "ExecutionAPI", serviceName = "ExecutionWebService")
 @SOAPBinding
-public class ExecutionServiceBean implements ExecutionServiceLocal, ExecutionServiceRemote, ExecutionServiceRemoteWS {
+public class ExecutionServiceBean implements ExecutionServiceLocal, ExecutionServiceRemote, ExecutionWebServiceRemote {
     @Autowired
     private DefinitionLogic definitionLogic;
     @Autowired
@@ -247,15 +247,15 @@ public class ExecutionServiceBean implements ExecutionServiceLocal, ExecutionSer
 
     @Override
     @WebResult(name = "result")
-    public FileVariable getFileVariableValue(@WebParam(name = "user") User user, @WebParam(name = "processId") Long processId,
+    public FileVariableImpl getFileVariableValue(@WebParam(name = "user") User user, @WebParam(name = "processId") Long processId,
             @WebParam(name = "variableName") String variableName) {
         Preconditions.checkArgument(user != null, "user");
         Preconditions.checkArgument(processId != null, "processId");
         Preconditions.checkArgument(variableName != null, "variableName");
         WfVariable variable = variableLogic.getVariable(user, processId, variableName);
         if (variable != null) {
-            IFileVariable fileVariable = (IFileVariable) variable.getValue();
-            return new FileVariable(fileVariable);
+            FileVariable fileVariable = (FileVariable) variable.getValue();
+            return new FileVariableImpl(fileVariable);
         }
         return null;
     }
