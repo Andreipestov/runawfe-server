@@ -4,6 +4,7 @@ import java.util.Set;
 import ru.runa.wfe.audit.dao.ProcessLogDao;
 import ru.runa.wfe.definition.dao.ProcessDefinitionLoader;
 import ru.runa.wfe.execution.ExecutionContext;
+import ru.runa.wfe.execution.ExecutionContextFactory;
 import ru.runa.wfe.presentation.BatchPresentation;
 import ru.runa.wfe.presentation.hibernate.BatchPresentationCompilerFactory;
 import ru.runa.wfe.ss.SubstitutionCriteria;
@@ -44,7 +45,7 @@ public abstract class TestCaseDataSet implements ITestCaseDataSet {
     }
 
     @Override
-    public void mockRules(ExecutionContextFactory exeContextFactory) {
+    public void mockRules(ExecutionContextFactory executionContextFactory) {
 
     }
 
