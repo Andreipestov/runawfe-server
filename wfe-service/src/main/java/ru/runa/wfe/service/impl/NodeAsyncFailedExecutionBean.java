@@ -16,7 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ejb.interceptor.SpringBeanAutowiringInterceptor;
 import ru.runa.wfe.commons.Utils;
 import ru.runa.wfe.execution.Token;
-import ru.runa.wfe.execution.dao.TokenDAO;
+import ru.runa.wfe.execution.dao.TokenDao;
 import ru.runa.wfe.service.interceptors.EjbExceptionSupport;
 import ru.runa.wfe.service.interceptors.PerformanceObserver;
 
@@ -30,7 +30,7 @@ public class NodeAsyncFailedExecutionBean implements MessageListener {
     @Resource
     private MessageDrivenContext context;
     @Autowired
-    private TokenDAO tokenDAO;
+    private TokenDao tokenDao;
 
     @Override
     public void onMessage(Message jmsMessage) {
@@ -42,7 +42,7 @@ public class NodeAsyncFailedExecutionBean implements MessageListener {
             if (errorMessage == null) {
                 errorMessage = "DLQ";
             }
-            Token token = tokenDAO.get(tokenId);
+            Token token = tokenDao.get(tokenId);
             if (token == null) {
                 log.info("Seems like process for tokenId = " + tokenId + " is removed");
                 return;

@@ -3,9 +3,7 @@ package ru.runa.wfe.commons;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
 import javax.transaction.UserTransaction;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -17,7 +15,7 @@ import org.apache.commons.logging.LogFactory;
  * @deprecated not-friendly for CMT-transactions
  */
 @Deprecated
-public abstract class DeferredTransactionListener implements ITransactionListener, Runnable {
+public abstract class DeferredTransactionListener implements TransactionListener, Runnable {
     private static final ScheduledExecutorService scheduledExecutorService = new ScheduledThreadPoolExecutor(1);
     protected final Log log = LogFactory.getLog(getClass());
 
