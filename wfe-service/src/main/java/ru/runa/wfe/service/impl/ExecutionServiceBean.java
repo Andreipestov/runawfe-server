@@ -59,8 +59,8 @@ import ru.runa.wfe.user.Executor;
 import ru.runa.wfe.user.User;
 import ru.runa.wfe.var.dto.WfVariable;
 import ru.runa.wfe.var.dto.WfVariableHistoryState;
-import ru.runa.wfe.var.file.FileVariableImpl;
 import ru.runa.wfe.var.file.FileVariable;
+import ru.runa.wfe.var.file.FileVariableImpl;
 import ru.runa.wfe.var.logic.VariableLogic;
 
 @Stateless(name = "ExecutionServiceBean")
@@ -217,7 +217,7 @@ public class ExecutionServiceBean implements ExecutionServiceLocal, ExecutionSer
 
     @Override
     @WebResult(name = "result")
-    public FileVariable getFileVariableValue(@WebParam(name = "user") @NonNull User user, @WebParam(name = "processId") @NonNull Long processId,
+    public FileVariableImpl getFileVariableValue(@WebParam(name = "user") @NonNull User user, @WebParam(name = "processId") @NonNull Long processId,
             @WebParam(name = "variableName") @NonNull String variableName) {
         WfVariable variable = variableLogic.getVariable(user, processId, variableName);
         if (variable != null) {
