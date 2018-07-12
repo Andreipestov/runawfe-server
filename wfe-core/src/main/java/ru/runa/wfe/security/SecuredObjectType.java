@@ -124,6 +124,7 @@ public final class SecuredObjectType implements Serializable, Comparable<Secured
 
     public static final SecuredObjectType BOTSTATIONS = new SecuredObjectType("BOTSTATIONS");
     public static final SecuredObjectType DATAFILE = new SecuredObjectType("DATAFILE");
+    public static final SecuredObjectType DATASOURCES = new SecuredObjectType("DATASOURCES");
     public static final SecuredObjectType ERRORS = new SecuredObjectType("ERRORS");
     public static final SecuredObjectType LOGS = new SecuredObjectType("LOGS");
     public static final SecuredObjectType RELATIONS = new SecuredObjectType("RELATIONS");
