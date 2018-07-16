@@ -221,6 +221,9 @@ public final class ApplicablePermissions {
         add(SecuredObjectType.DATAFILE, ALL)
                 .hidden(READ_PERMISSIONS, UPDATE_PERMISSIONS, LIST);
 
+        // System singleton:
+        add(SecuredObjectType.DATASOURCES, ALL).hidden(READ_PERMISSIONS, UPDATE_PERMISSIONS, LIST);
+
         add(SecuredObjectType.DEFINITION, ALL, LIST, READ, UPDATE, START, READ_PROCESS, CANCEL_PROCESS)
                 .defaults(LIST)
                 .hidden(READ_PERMISSIONS, UPDATE_PERMISSIONS);

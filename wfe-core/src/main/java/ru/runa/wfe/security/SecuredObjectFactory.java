@@ -185,6 +185,7 @@ public class SecuredObjectFactory {
 
         add(SecuredSingleton.BOTSTATIONS);
         add(SecuredSingleton.DATAFILE);
+        add(SecuredSingleton.DATASOURCES);
         add(SecuredSingleton.DEFINITIONS);
 
         add(SecuredObjectType.DEFINITION, new Loader(SecuredObjectType.DEFINITION) {

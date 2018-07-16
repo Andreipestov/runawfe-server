@@ -16,6 +16,7 @@ import ru.runa.wfe.service.delegate.Delegates;
 import ru.runa.wfe.user.User;
 
 import static ru.runa.wfe.security.SecuredObjectType.DATAFILE;
+import static ru.runa.wfe.security.SecuredObjectType.DATASOURCES;
 import static ru.runa.wfe.security.SecuredObjectType.ERRORS;
 import static ru.runa.wfe.security.SecuredObjectType.SCRIPTS;
 import static ru.runa.wfe.security.SecuredObjectType.SUBSTITUTION_CRITERIAS;
@@ -35,6 +36,7 @@ public class CheckSingletonPermissionAndForwardAction extends ActionBase {
     private static final String TAB_FORWARD_NAME_PARAMETER_NAME = "tabForwardName";
     private static final HashMap<SecuredObjectType, Config> configs = new HashMap<SecuredObjectType, Config>() {{
         put(DATAFILE, new Config(Permission.ALL, "/WEB-INF/af/manage_datafile.jsp"));
+        put(DATASOURCES, new Config(Permission.ALL, "/WEB-INF/wf/manage_data_sources.jsp"));
         put(ERRORS, new Config(Permission.ALL, "/WEB-INF/af/manage_errors.jsp"));
         put(SCRIPTS, new Config(Permission.ALL, "/WEB-INF/af/manage_scripts.jsp"));
         put(SUBSTITUTION_CRITERIAS, new Config(Permission.ALL, "/WEB-INF/af/manage_substitution_criteria.jsp"));
