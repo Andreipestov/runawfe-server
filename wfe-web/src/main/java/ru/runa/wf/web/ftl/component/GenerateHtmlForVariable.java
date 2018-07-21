@@ -188,7 +188,7 @@ public class GenerateHtmlForVariable implements VariableFormatVisitor<GenerateHt
             }
         }
         if (!context.readonly) {
-            result.addElement(createAddElement(scriptingVariableName));
+            result.addElement(createAddElement());
         }
         return new GenerateHtmlForVariableResult(context, result.toString());
     }
@@ -232,7 +232,7 @@ public class GenerateHtmlForVariable implements VariableFormatVisitor<GenerateHt
                 elementRow.addElement(createRemoveElement(context));
                 result.addElement(new Div().addElement(elementRow));
             }
-            result.addElement(createAddElement(scriptingVariableName));
+            result.addElement(createAddElement());
         } else {
             Table table = new Table();
             table.setClass("list");
@@ -514,7 +514,6 @@ public class GenerateHtmlForVariable implements VariableFormatVisitor<GenerateHt
      */
     private Input createRemoveElement(GenerateHtmlForVariableContext context) {
         Input removeButton = new Input();
-        removeButton.setName("remove_" + context.variable.getDefinition().getScriptingNameWithoutDots());
         removeButton.setType("button");
         removeButton.setValue(" - ");
         removeButton.setStyle("width: 30px;");
@@ -525,11 +524,10 @@ public class GenerateHtmlForVariable implements VariableFormatVisitor<GenerateHt
     /**
      * @return add button for list and so on containers.
      */
-    private Div createAddElement(String scriptingVariableName) {
+    private Div createAddElement() {
         Div result = new Div();
         Input addButton = new Input();
         result.addElement(addButton);
-        addButton.setName("add_" + scriptingVariableName);
         addButton.setType("button");
         addButton.setClass("add");
         addButton.setStyle("width: 30px;");
