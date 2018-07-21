@@ -1,6 +1,5 @@
 package ru.runa.wfe.service.impl;
 
-import com.google.common.base.Preconditions;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -141,8 +140,7 @@ public class TaskServiceBean implements TaskServiceLocal, TaskServiceRemote, Tas
     }
 
     @Override
-    public List<WfTask> getUnassignedTasks(User user) {
-        Preconditions.checkArgument(user != null, "user");
+    public List<WfTask> getUnassignedTasks(@NonNull User user) {
         return taskLogic.getUnassignedTasks(user);
     }
 
