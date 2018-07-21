@@ -8,9 +8,9 @@
 			}
 
 			updateIndexes(container);
-			container.find(".add").click(function(event) {
+			container.find(".add[name='add_" + container.attr("id") + "']").click(function(event) {
 				event.stopPropagation();
-				var rows = container.find("div[row]");
+				var rows = container.children("div").children("div[row]");
 				var rowIndex = rows.length < 1 ? 0 : parseInt(rows.last().attr("row")) + 1;
 				var copy = container.find("div[template]").first().clone();
 				copy.children().each(function() {
@@ -27,7 +27,7 @@
 				settings.onRowAdded.call(this, [rowIndex]);
 			});
 
-			container.delegate(".remove", "click", function(event) {
+			container.delegate(".remove[name='remove_" + container.attr("id") + "']", "click", function(event) {
 				event.stopPropagation();
 				var rowElement = $(this).closest("div[row]");
 				var rowIndex = parseInt(rowElement.attr("row"));
