@@ -55,6 +55,10 @@ public class ViewLogsAction extends ActionBase {
                     return null;
                 }
 
+                if (form.getLimitLinesCount() == 0) {
+                    form.setLimitLinesCount(limitLinesCount);
+                }
+
                 String logFileContent;
                 if (form.getMode() == ViewLogForm.MODE_READBEGIN) {
                     logFileContent = wrapLines(searchLines(file, form, new ArrayList<>()), form, new ArrayList<>());
@@ -65,10 +69,6 @@ public class ViewLogsAction extends ActionBase {
 
                 int allLinesCount = countLines(file);
                 form.setAllLinesCount(allLinesCount);
-
-                if (form.getLimitLinesCount() == 0) {
-                    form.setLimitLinesCount(limitLinesCount);
-                }
 
                 request.setAttribute("pagingToolbar", createPagingToolbar(form));
             }
@@ -190,10 +190,13 @@ public class ViewLogsAction extends ActionBase {
 
                 if (result) {
                     linesFound++;
-                    line = StringEscapeUtils.escapeHtml(line);
-                    line = line.replaceAll("\\t", "&nbsp;&nbsp;&nbsp;&nbsp;");
-                    b.append(line).append("<br>");
-                    lineNumbers.add(i);
+
+                    if (linesFound <= form.getLimitLinesCount()) {
+                        line = StringEscapeUtils.escapeHtml(line);
+                        line = line.replaceAll("\\t", "&nbsp;&nbsp;&nbsp;&nbsp;");
+                        b.append(line).append("<br>");
+                        lineNumbers.add(i);
+                    }
                 }
 
                 i++;
@@ -236,10 +239,13 @@ public class ViewLogsAction extends ActionBase {
 
                 if (result) {
                     linesFound++;
-                    line = StringEscapeUtils.escapeHtml(line);
-                    line = line.replaceAll("\\t", "&nbsp;&nbsp;&nbsp;&nbsp;");
-                    b.append(line).append("<br>");
-                    lineNumbers.add(i);
+
+                    if (linesFound <= form.getLimitLinesCount()) {
+                        line = StringEscapeUtils.escapeHtml(line);
+                        line = line.replaceAll("\\t", "&nbsp;&nbsp;&nbsp;&nbsp;");
+                        b.append(line).append("<br>");
+                        lineNumbers.add(i);
+                    }
                 }
 
                 i++;
