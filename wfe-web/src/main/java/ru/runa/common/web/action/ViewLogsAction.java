@@ -149,7 +149,8 @@ public class ViewLogsAction extends ActionBase {
                         "&searchCaseSensitive=" + String.valueOf(form.isSearchCaseSensitive()) +
                         "&searchErrors=" + String.valueOf(form.isSearchErrors()) +
                         "&searchWarns=" + String.valueOf(form.isSearchWarns()) +
-                        "&limitLinesCount=" + form.getLimitLinesCount();
+                        "&limitLinesCount=" + form.getLimitLinesCount() +
+                        "&search=" + (form.getSearch() == null ? "" : form.getSearch());
                 b.append("<a href=\"").append(href).append("\">").append(text).append("</a>&nbsp;&nbsp;&nbsp;");
             }
             return b.toString();
@@ -174,7 +175,7 @@ public class ViewLogsAction extends ActionBase {
             while (((line = lReader.readLine()) != null)) {
                 boolean result = true;
 
-                if (form.isSearchContainsWord()) {
+                if (form.isSearchContainsWord() && !form.getSearch().isEmpty()) {
                     result = form.isSearchCaseSensitive() ? StringUtils.contains(line, form.getSearch()) : StringUtils.containsIgnoreCase(line, form.getSearch());
                 }
 
@@ -220,7 +221,7 @@ public class ViewLogsAction extends ActionBase {
             while (((line = rReader.readLine()) != null)) {
                 boolean result = true;
 
-                if (form.isSearchContainsWord()) {
+                if (form.isSearchContainsWord() && !form.getSearch().isEmpty()) {
                     result = form.isSearchCaseSensitive() ? StringUtils.contains(line, form.getSearch()) : StringUtils.containsIgnoreCase(line, form.getSearch());
                 }
 

@@ -46,8 +46,6 @@ $().ready(function() {
 		}
 	});
 
-    $("input[id='readEndMode']").attr("checked", "true");
-
 	$("input[name='searchContainsWord']").click(function() {
         syncModeInputs();
 	});
@@ -67,8 +65,6 @@ function syncModeInputs() {
         $("input[name='search']").attr("disabled", "true");
         $("input[name='searchCaseSensitive']").attr("disabled", "true");
     }
-
-    $("input[id='readEndMode']").attr("checked", "false");
 }
 
 function initReloadLogTimer() {
