@@ -59,6 +59,10 @@ public class ViewLogsAction extends ActionBase {
                     form.setLimitLinesCount(limitLinesCount);
                 }
 
+                if (form.getEndLine() == 0) {
+                    form.setEndLine(limitLinesCount);
+                }
+
                 String logFileContent;
                 if (form.getMode() == ViewLogForm.MODE_READBEGIN) {
                     logFileContent = wrapLines(searchLines(file, form, new ArrayList<>()), form, new ArrayList<>());
@@ -165,14 +169,6 @@ public class ViewLogsAction extends ActionBase {
             int linesFound = 1;
             String line;
 
-            if (form.getStartLine() != 1) {
-                for (int j = 0; j < form.getStartLine(); j++) {
-                    if (lReader.readLine() == null) {
-                        break;
-                    }
-                }
-            }
-
             while (((line = lReader.readLine()) != null)) {
                 boolean result = true;
 
@@ -191,7 +187,11 @@ public class ViewLogsAction extends ActionBase {
                 if (result) {
                     linesFound++;
 
-                    if (linesFound <= form.getLimitLinesCount()) {
+                    if (linesFound < form.getStartLine()) {
+                        continue;
+                    }
+
+                    if (linesFound <= form.getEndLine()) {
                         line = StringEscapeUtils.escapeHtml(line);
                         line = line.replaceAll("\\t", "&nbsp;&nbsp;&nbsp;&nbsp;");
                         b.append(line).append("<br>");
@@ -214,14 +214,6 @@ public class ViewLogsAction extends ActionBase {
             int linesFound = 1;
             String line;
 
-            if (form.getStartLine() != 1) {
-                for (int j = 0; j < form.getStartLine(); j++) {
-                    if (rReader.readLine() == null) {
-                        break;
-                    }
-                }
-            }
-
             while (((line = rReader.readLine()) != null)) {
                 boolean result = true;
 
@@ -240,7 +232,11 @@ public class ViewLogsAction extends ActionBase {
                 if (result) {
                     linesFound++;
 
-                    if (linesFound <= form.getLimitLinesCount()) {
+                    if (linesFound < form.getStartLine()) {
+                        continue;
+                    }
+
+                    if (linesFound <= form.getEndLine()) {
                         line = StringEscapeUtils.escapeHtml(line);
                         line = line.replaceAll("\\t", "&nbsp;&nbsp;&nbsp;&nbsp;");
                         b.append(line).append("<br>");
