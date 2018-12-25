@@ -58,6 +58,10 @@ public class ViewLogsAction extends ActionBase {
                 int allLinesCount = countLines(file);
                 form.setAllLinesCount(allLinesCount);
 
+                if (form.getLimitLinesCount() == 0) {
+                    form.setLimitLinesCount(limitLinesCount);
+                }
+
                 request.setAttribute("pagingToolbar", createPagingToolbar(form));
 
                 String logFileContent;
@@ -123,21 +127,29 @@ public class ViewLogsAction extends ActionBase {
     private String createPagingToolbar(ViewLogForm form) {
         if (form.getAllLinesCount() > form.getLimitLinesCount()) {
             StringBuilder b = new StringBuilder();
-            int n = form.getAllLinesCount() / limitLinesCount;
-            if (form.getAllLinesCount() % limitLinesCount != 0) {
+            int n = form.getAllLinesCount() / form.getLimitLinesCount();
+            if (form.getAllLinesCount() % form.getLimitLinesCount() != 0) {
                 n++;
             }
             for (int i = 0; i < n; i++) {
-                int startFrom = i * limitLinesCount + 1;
-                int endTo = startFrom + limitLinesCount - 1;
+                int startFrom = i * form.getLimitLinesCount() + 1;
+                int endTo = startFrom + form.getLimitLinesCount() - 1;
                 String text;
                 if (i == n - 1) {
                     text = "[" + startFrom + "-*]";
                 } else {
                     text = "[" + startFrom + "-" + endTo + "]";
                 }
-                String href = "/wfe" + ViewLogsAction.ACTION_PATH + ".do?fileName=" + form.getFileName() + "&mode=1&startLine=" + startFrom
-                        + "&endLine=" + endTo;
+                String href = "/wfe" + ViewLogsAction.ACTION_PATH +
+                        ".do?fileName=" + form.getFileName() +
+                        "&mode=" + form .getMode() +
+                        "&startLine=" + startFrom +
+                        "&endLine=" + endTo +
+                        "&searchContainsWord=" + String.valueOf(form.isSearchContainsWord()) +
+                        "&searchCaseSensitive=" + String.valueOf(form.isSearchCaseSensitive()) +
+                        "&searchErrors=" + String.valueOf(form.isSearchErrors()) +
+                        "&searchWarns=" + String.valueOf(form.isSearchWarns()) +
+                        "&limitLinesCount=" + form.getLimitLinesCount();
                 b.append("<a href=\"").append(href).append("\">").append(text).append("</a>&nbsp;&nbsp;&nbsp;");
             }
             return b.toString();
@@ -150,7 +162,16 @@ public class ViewLogsAction extends ActionBase {
             StringBuilder b = new StringBuilder(1000);
             int i = 1;
             String line;
-            while (null != (line = lReader.readLine())) {
+
+            if (form.getStartLine() != 1) {
+                for (int j = 0; j < form.getStartLine(); j++) {
+                    if (lReader.readLine() == null) {
+                        break;
+                    }
+                }
+            }
+
+            while (((line = lReader.readLine()) != null)) {
                 boolean result = true;
 
                 if (form.isSearchContainsWord()) {
@@ -187,7 +208,16 @@ public class ViewLogsAction extends ActionBase {
             StringBuilder b = new StringBuilder(1000);
             int i = 1;
             String line;
-            while (null != (line = rReader.readLine())) {
+
+            if (form.getStartLine() != 1) {
+                for (int j = 0; j < form.getStartLine(); j++) {
+                    if (rReader.readLine() == null) {
+                        break;
+                    }
+                }
+            }
+
+            while (((line = rReader.readLine()) != null)) {
                 boolean result = true;
 
                 if (form.isSearchContainsWord()) {
