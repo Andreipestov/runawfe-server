@@ -55,6 +55,14 @@ public class ViewLogsAction extends ActionBase {
                     return null;
                 }
 
+                String logFileContent;
+                if (form.getMode() == ViewLogForm.MODE_READBEGIN) {
+                    logFileContent = wrapLines(searchLines(file, form, new ArrayList<>()), form, new ArrayList<>());
+                } else {
+                    logFileContent = wrapLines(searchLinesReverse(file, form, new ArrayList<>()), form, new ArrayList<>());
+                }
+                request.setAttribute("logFileContent", logFileContent);
+
                 int allLinesCount = countLines(file);
                 form.setAllLinesCount(allLinesCount);
 
@@ -63,14 +71,6 @@ public class ViewLogsAction extends ActionBase {
                 }
 
                 request.setAttribute("pagingToolbar", createPagingToolbar(form));
-
-                String logFileContent;
-                if (form.getMode() == ViewLogForm.MODE_READBEGIN) {
-                    logFileContent = wrapLines(searchLines(file, form, new ArrayList<>()), form, new ArrayList<>());
-                } else {
-                    logFileContent = wrapLines(searchLinesReverse(file, form, new ArrayList<>()), form, new ArrayList<>());
-                }
-                request.setAttribute("logFileContent", logFileContent);
             }
 
             form.setLimitLinesCount(form.getLimitLinesCount() == 0 ? limitLinesCount : form.getLimitLinesCount());
@@ -125,10 +125,10 @@ public class ViewLogsAction extends ActionBase {
     }
 
     private String createPagingToolbar(ViewLogForm form) {
-        if (form.getAllLinesCount() > form.getLimitLinesCount()) {
+        if (form.getLinesFound() > form.getLimitLinesCount()) {
             StringBuilder b = new StringBuilder();
-            int n = form.getAllLinesCount() / form.getLimitLinesCount();
-            if (form.getAllLinesCount() % form.getLimitLinesCount() != 0) {
+            int n = form.getLinesFound() / form.getLimitLinesCount();
+            if (form.getLinesFound() % form.getLimitLinesCount() != 0) {
                 n++;
             }
             for (int i = 0; i < n; i++) {
@@ -162,6 +162,7 @@ public class ViewLogsAction extends ActionBase {
         try (LineNumberReader lReader = new LineNumberReader(new InputStreamReader(new FileInputStream(file)))) {
             StringBuilder b = new StringBuilder(1000);
             int i = 1;
+            int linesFound = 1;
             String line;
 
             if (form.getStartLine() != 1) {
@@ -188,18 +189,17 @@ public class ViewLogsAction extends ActionBase {
                 }
 
                 if (result) {
+                    linesFound++;
                     line = StringEscapeUtils.escapeHtml(line);
                     line = line.replaceAll("\\t", "&nbsp;&nbsp;&nbsp;&nbsp;");
                     b.append(line).append("<br>");
                     lineNumbers.add(i);
-                    if (lineNumbers.size() > limitLinesCount) {
-                        break;
-                    }
                 }
 
                 i++;
             }
 
+            form.setLinesFound(linesFound);
             return b.toString();
         }
     }
@@ -208,6 +208,7 @@ public class ViewLogsAction extends ActionBase {
         try (ReversedLinesFileReader rReader = new ReversedLinesFileReader(file)) {
             StringBuilder b = new StringBuilder(1000);
             int i = 1;
+            int linesFound = 1;
             String line;
 
             if (form.getStartLine() != 1) {
@@ -234,18 +235,17 @@ public class ViewLogsAction extends ActionBase {
                 }
 
                 if (result) {
+                    linesFound++;
                     line = StringEscapeUtils.escapeHtml(line);
                     line = line.replaceAll("\\t", "&nbsp;&nbsp;&nbsp;&nbsp;");
                     b.append(line).append("<br>");
                     lineNumbers.add(i);
-                    if (lineNumbers.size() > limitLinesCount) {
-                        break;
-                    }
                 }
 
                 i++;
             }
 
+            form.setLinesFound(linesFound);
             return b.toString();
         }
     }

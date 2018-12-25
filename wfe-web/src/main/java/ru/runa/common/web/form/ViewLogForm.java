@@ -24,6 +24,7 @@ public class ViewLogForm extends ActionForm {
     private int endLine = 0;
     private int endLines = 500;
     private int limitLinesCount;
+    private int linesFound;
     private boolean autoReload;
     private String search;
     private boolean searchCaseSensitive;
@@ -150,5 +151,13 @@ public class ViewLogForm extends ActionForm {
 
     public void setSearchWarns(boolean searchWarns) {
         this.searchWarns = searchWarns;
+    }
+
+    public int getLinesFound() {
+        return linesFound;
+    }
+
+    public void setLinesFound(int linesFound) {
+        this.linesFound = linesFound;
     }
 }
