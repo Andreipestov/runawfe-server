@@ -374,6 +374,17 @@ input[type=text] {
     padding-left:10px;
     padding-right:10px;
 }
+
+select {
+    width: auto;
+    min-width: 322px;
+    height: 32px;
+    margin: 10px;
+    padding-left: 10px;
+    padding-right: 10px;
+    border: 1px solid #f1efef; /* default-color */
+}
+
 textarea {
     border-radius: 15px;
     width: auto;

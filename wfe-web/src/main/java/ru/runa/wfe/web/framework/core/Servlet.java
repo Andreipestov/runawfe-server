@@ -1,13 +1,14 @@
 package ru.runa.wfe.web.framework.core;
 
-import java.util.HashMap;
+import lombok.extern.apachecommons.CommonsLog;
+import lombok.val;
+
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import lombok.extern.apachecommons.CommonsLog;
-import lombok.val;
+import java.util.HashMap;
 
 /**
  * Entry point. Must be placed into web.xml.
@@ -41,7 +42,8 @@ public class Servlet extends HttpServlet {
             method = RequestMethod.valueOf(hrq.getMethod());
             String uri = getRequestUri(hrq);
             val pathParams = new HashMap<String, String>();
-            handler = configuration.uriToHandlerMapper.createHandler(method, uri, pathParams);
+            val params = hrq.getParameterMap();
+            handler = configuration.uriToHandlerMapper.createHandler(method, uri, pathParams, params);
             if (handler == null) {
                 sendError(hrq, hre, HttpServletResponse.SC_NOT_FOUND);
                 return;
@@ -51,7 +53,7 @@ public class Servlet extends HttpServlet {
             }
 
             //noinspection unchecked
-            handler.params = configuration.requestParamsParser.parse(pathParams, hrq.getParameterMap(), handler.paramsClass);
+            handler.params = configuration.requestParamsParser.parse(pathParams, hrq.getParameterMap(), handler);
         } catch (Throwable e) {
             log.error("Request dispatcher or parameter parser failed, responding error 400", e);
             sendError(hrq, hre, HttpServletResponse.SC_BAD_REQUEST);

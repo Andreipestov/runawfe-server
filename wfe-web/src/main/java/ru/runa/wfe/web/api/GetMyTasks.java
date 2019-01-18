@@ -8,10 +8,10 @@ import ru.runa.wfe.service.delegate.Delegates;
 import ru.runa.wfe.task.dto.WfTask;
 import ru.runa.wfe.web.framework.extra.JsonHandler;
 
-public class GetMyTasks extends JsonHandler<Object, JsonHandler.ListResponse<GetMyTasks.Row>> {
+public class GetMyTasks extends JsonHandler<GetMyTasks, JsonHandler.ListResponse<GetMyTasks.Row>> {
 
     public GetMyTasks() {
-        super(acceptGet, Object.class);
+        super(acceptGet, GetMyTasks.class);
     }
 
     @Getter

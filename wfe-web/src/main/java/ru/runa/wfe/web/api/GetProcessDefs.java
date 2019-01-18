@@ -7,7 +7,11 @@ import ru.runa.wfe.definition.dto.WfDefinition;
 import ru.runa.wfe.service.delegate.Delegates;
 import ru.runa.wfe.web.framework.extra.JsonHandler;
 
-public class GetProcessDefs extends JsonHandler<Object, JsonHandler.ListResponse<GetProcessDefs.Row>> {
+public class GetProcessDefs extends JsonHandler<GetProcessDefs, JsonHandler.ListResponse<GetProcessDefs.Row>> {
+
+    public GetProcessDefs() {
+        super(acceptGet, GetProcessDefs.class);
+    }
 
     @Getter
     static class Row {
@@ -15,10 +19,6 @@ public class GetProcessDefs extends JsonHandler<Object, JsonHandler.ListResponse
         String name;
         String description;
         String category;
-    }
-
-    public GetProcessDefs() {
-        super(acceptGet, Object.class);
     }
 
     @Override

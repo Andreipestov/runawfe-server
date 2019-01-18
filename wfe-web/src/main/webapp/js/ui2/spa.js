@@ -17,11 +17,12 @@ var wfe = new function() {
         $('#spa-error').show();
     };
 
-    this.ajaxGetJsonAndReady = function(url, onSuccess) {
+    this.ajaxGetJsonAndReady = function(url, data, onSuccess) {
         wfe.wait();
         $.ajax({
             url: "/wfe/api/" + url,
             dataType: "json",
+            data: data,
             success: function(json) {
                 if (json.error) {
                     wfe.error(json.error);

@@ -2,7 +2,7 @@ wfe.processes = new function() {
     var app = null;
      this.onLoad = function() {
         this.onUnload();  // just in case
-        wfe.ajaxGetJsonAndReady("processes", function(data) {
+        wfe.ajaxGetJsonAndReady("processes", {}, function(data) {
             app = new Vue({
                 el: "#spa-body",
                 data: data

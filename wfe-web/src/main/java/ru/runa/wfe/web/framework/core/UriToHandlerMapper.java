@@ -1,9 +1,10 @@
 package ru.runa.wfe.web.framework.core;
 
-import java.net.URLDecoder;
-import java.util.HashMap;
-import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.lang.StringUtils;
+
+import javax.servlet.http.HttpServletRequest;
+import java.net.URLDecoder;
+import java.util.Map;
 
 /**
  * @see ServletConfiguration
@@ -59,10 +60,11 @@ public abstract class UriToHandlerMapper {
      *
      * @param uri Not null. Combined values of HttpServletRequest.getServletPath() and getPathInfo(). "/" for root URI.
      * @param pathParams Not null. Output parameter: here implementation must store path parameters it encounters during URI parsing.
+     * @param params Input parameters: there should be parameters coming from the Web Interface.
      * @return NUll means error 404.
      * @throws Exception Means error 400.
      */
-    protected abstract RequestHandler createHandler(RequestMethod method, String uri, HashMap<String, String> pathParams) throws Exception;
+    protected abstract RequestHandler createHandler(RequestMethod method, String uri, Map<String, String> pathParams, Map<String, String[]> params) throws Exception;
 
     /**
      * ATTENTION! RequestHandler is stateful, so this method must create and return NEW instance on each call.

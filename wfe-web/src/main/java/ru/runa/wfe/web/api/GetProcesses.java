@@ -9,7 +9,11 @@ import ru.runa.wfe.execution.dto.WfProcess;
 import ru.runa.wfe.service.delegate.Delegates;
 import ru.runa.wfe.web.framework.extra.JsonHandler;
 
-public class GetProcesses extends JsonHandler<Object, JsonHandler.ListResponse<GetProcesses.Row>> {
+public class GetProcesses extends JsonHandler<GetProcesses, JsonHandler.ListResponse<GetProcesses.Row>> {
+
+    public GetProcesses() {
+        super(acceptGet, GetProcesses.class);
+    }
 
     @Getter
     static class Row {
@@ -18,10 +22,6 @@ public class GetProcesses extends JsonHandler<Object, JsonHandler.ListResponse<G
         String startDate;
         String endDate;
         ExecutionStatus executionStatus;
-    }
-
-    public GetProcesses() {
-        super(acceptGet, Object.class);
     }
     
     @Override

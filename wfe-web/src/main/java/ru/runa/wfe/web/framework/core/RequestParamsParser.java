@@ -1,5 +1,10 @@
 package ru.runa.wfe.web.framework.core;
 
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.val;
+import org.apache.commons.lang.StringUtils;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -10,10 +15,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.val;
-import org.apache.commons.lang.StringUtils;
 
 /**
  * Add custom type mappings by overriding {@link #convertValuesToType(String[], Type)} and {@link #convertValueToType(String, Type)} methods.
@@ -52,18 +53,17 @@ public class RequestParamsParser {
     /**
      * @throws Exception Means error 400.
      */
-    final <C> C parse(Map<String, String> pathParams, Map<String, String[]> requestParams, Class<C> targetClass) throws Exception {
-        C o = targetClass.newInstance();
+    final Object parse(Map<String, String> pathParams, Map<String, String[]> requestParams, Object targetClass) {
         for (val kv : pathParams.entrySet()) {
-            setFieldValue(o, kv.getKey(), new String[] { kv.getValue() });
+            setFieldValue(targetClass, kv.getKey(), new String[] { kv.getValue() });
         }
         for (val kv : requestParams.entrySet()) {
             String name = kv.getKey();
             if (name.charAt(0) != '.') {
-                setFieldValue(o, name, kv.getValue());
+                setFieldValue(targetClass, name, kv.getValue());
             }
         }
-        return o;
+        return targetClass;
     }
 
     private void setFieldValue(Object o, String name, String[] values) {
@@ -129,7 +129,7 @@ public class RequestParamsParser {
         boolean isLastNamePart = namePartIdx == nameParts.length - 1;
         if (isLastNamePart) {
 
-            Object value = convertValuesToType(values, valueType);
+            Object value = convertValuesToType(values, valueType).toString();
             if (indexOrNull == null) {
                 f.set(o, value);
             } else if (isArrayList) {
@@ -256,6 +256,8 @@ public class RequestParamsParser {
         } else if (t == double.class || t == Double.class) {
             return Double.parseDouble(value);
         } else if (t == String.class) {
+            return value;
+        } else if (t == String[].class) {
             return value;
         } else {
             // TODO UUID?

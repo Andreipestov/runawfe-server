@@ -1,9 +1,9 @@
 package ru.runa.wfe.web.config;
 
-import java.util.HashMap;
 import lombok.val;
 import ru.runa.wfe.web.api.GetMyTasks;
 import ru.runa.wfe.web.api.GetProcessDefs;
+import ru.runa.wfe.web.api.GetProcessForm;
 import ru.runa.wfe.web.api.GetProcesses;
 import ru.runa.wfe.web.framework.core.RequestHandler;
 import ru.runa.wfe.web.framework.core.RequestMethod;
@@ -11,10 +11,12 @@ import ru.runa.wfe.web.framework.core.UriToHandlerMapper;
 import ru.runa.wfe.web.framework.extra.JspHandler;
 import ru.runa.wfe.web.framework.extra.RedirectHandler;
 
+import java.util.Map;
+
 public class UriToHandlerMapperImpl extends UriToHandlerMapper {
 
     @Override
-    protected RequestHandler createHandler(RequestMethod method, String uri, HashMap<String, String> pathParams) throws Exception {
+    protected RequestHandler createHandler(RequestMethod method, String uri, Map<String, String> pathParams, Map<String, String[]> params) throws Exception {
         // Special cases not covered by PathComponents (which is insensitive to trailing slash).
         if (uri.isEmpty() || uri.equals("/ui2")) {
             return new RedirectHandler("/wfe/ui2/");
@@ -27,6 +29,8 @@ public class UriToHandlerMapperImpl extends UriToHandlerMapper {
                     return new GetMyTasks();
                 case "processDefs":
                     return new GetProcessDefs();
+                case "processForm":
+                    return new GetProcessForm();
                 case "processes":
                     return new GetProcesses();
                 default:
