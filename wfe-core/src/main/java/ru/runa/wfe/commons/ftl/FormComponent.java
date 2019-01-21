@@ -6,10 +6,6 @@ import freemarker.ext.beans.BeansWrapper;
 import freemarker.template.TemplateMethodModelEx;
 import freemarker.template.TemplateModel;
 import freemarker.template.TemplateModelException;
-import java.io.InputStream;
-import java.io.Serializable;
-import java.util.List;
-import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import ru.runa.wfe.commons.ClassLoaderUtil;
@@ -20,6 +16,11 @@ import ru.runa.wfe.user.User;
 import ru.runa.wfe.var.AbstractVariableProvider;
 import ru.runa.wfe.var.VariableProvider;
 import ru.runa.wfe.var.dto.WfVariable;
+
+import java.io.InputStream;
+import java.io.Serializable;
+import java.util.List;
+import java.util.Map;
 
 public abstract class FormComponent implements TemplateMethodModelEx, Serializable {
     public static final String TARGET_PROCESS_PREFIX = "TargetProcess";
@@ -37,6 +38,11 @@ public abstract class FormComponent implements TemplateMethodModelEx, Serializab
         this.webHelper = webHelper;
         this.variableProvider = variableProvider;
         this.targetProcess = targetProcess;
+    }
+
+    public void init(User user, VariableProvider variableProvider) {
+        this.user = user;
+        this.variableProvider = variableProvider;
     }
 
     public void initChained(FormComponent parent) {

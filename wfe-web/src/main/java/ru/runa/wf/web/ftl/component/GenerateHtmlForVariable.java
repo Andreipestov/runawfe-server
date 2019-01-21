@@ -1,19 +1,9 @@
 package ru.runa.wf.web.ftl.component;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.ecs.html.Div;
-import org.apache.ecs.html.Input;
-import org.apache.ecs.html.TD;
-import org.apache.ecs.html.TR;
-import org.apache.ecs.html.Table;
-import org.apache.ecs.html.TextArea;
-
+import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
+import org.apache.ecs.html.*;
 import ru.runa.common.WebResources;
 import ru.runa.common.web.Resources;
 import ru.runa.wf.web.FormSubmissionUtils;
@@ -32,34 +22,10 @@ import ru.runa.wfe.var.UserTypeMap;
 import ru.runa.wfe.var.VariableDefinition;
 import ru.runa.wfe.var.dto.WfVariable;
 import ru.runa.wfe.var.file.FileVariable;
-import ru.runa.wfe.var.format.ActorFormat;
-import ru.runa.wfe.var.format.BigDecimalFormat;
-import ru.runa.wfe.var.format.BooleanFormat;
-import ru.runa.wfe.var.format.DateFormat;
-import ru.runa.wfe.var.format.DateTimeFormat;
-import ru.runa.wfe.var.format.DoubleFormat;
-import ru.runa.wfe.var.format.ExecutorFormat;
-import ru.runa.wfe.var.format.FileFormat;
-import ru.runa.wfe.var.format.FormatCommons;
-import ru.runa.wfe.var.format.FormattedTextFormat;
-import ru.runa.wfe.var.format.GroupFormat;
-import ru.runa.wfe.var.format.HiddenFormat;
-import ru.runa.wfe.var.format.ListFormat;
-import ru.runa.wfe.var.format.LongFormat;
-import ru.runa.wfe.var.format.MapFormat;
-import ru.runa.wfe.var.format.ProcessIdFormat;
-import ru.runa.wfe.var.format.StringFormat;
-import ru.runa.wfe.var.format.TextFormat;
-import ru.runa.wfe.var.format.TimeFormat;
-import ru.runa.wfe.var.format.UserTypeFormat;
-import ru.runa.wfe.var.format.VariableDisplaySupport;
-import ru.runa.wfe.var.format.VariableFormat;
-import ru.runa.wfe.var.format.VariableFormatVisitor;
-import ru.runa.wfe.var.format.VariableInputSupport;
+import ru.runa.wfe.var.format.*;
 
-import com.google.common.base.Objects;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
+import java.util.*;
+import java.util.Map;
 
 /**
  * Component for generation HTML code for displaying variable or get inputs from usr for variable.
@@ -74,11 +40,15 @@ public class GenerateHtmlForVariable implements VariableFormatVisitor<GenerateHt
     /**
      * Helper component for retrieve data.
      */
-    final WebHelper webHelper;
+    WebHelper webHelper;
 
     public GenerateHtmlForVariable(User user, WebHelper webHelper) {
         this.user = user;
         this.webHelper = webHelper;
+    }
+
+    public GenerateHtmlForVariable(User user) {
+        this.user = user;
     }
 
     @Override

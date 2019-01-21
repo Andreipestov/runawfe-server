@@ -17,10 +17,9 @@
  */
 package ru.runa.wfe.commons.ftl;
 
-import java.util.Map;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.util.Map;
 
 /**
  * Form component which allows user interaction with server through ajax requests.
@@ -51,6 +50,10 @@ public abstract class AjaxFormComponent extends FormComponent {
     }
 
     private void addJsonUrlSubstitution(Map<String, String> substitutions) {
+        if (webHelper == null) {
+            return;
+        }
+
         substitutions.put("JSON_URL", webHelper.getUrl("/form.fp?component=" + getName() + "&qualifier=" + getVariableNameForSubmissionProcessing()));
     }
 }
