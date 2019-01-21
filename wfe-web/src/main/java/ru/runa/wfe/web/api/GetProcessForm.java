@@ -85,8 +85,6 @@ public class GetProcessForm extends JsonHandler<GetProcessForm, JsonHandler.List
                 }
 
                 row.form = interactionFormData;
-            } else {
-                row.form = row.form + "Form is not exists.";
             }
 
             getRows().add(row);
