@@ -1,4 +1,4 @@
-body { 
+body {
 	color: black;
 	background-color: white;
 }
@@ -172,9 +172,9 @@ td.settings-link {
 
 .grouppingHeader {
 	text-align: left;
-	font-family: Verdana; 
-	font-size: 11px; 
-	font-style: normal; 
+	font-family: Verdana;
+	font-size: 11px;
+	font-style: normal;
 	font-weight: bold
 }
 
@@ -215,14 +215,14 @@ th.empty20, td.empty20 {
 }
 
 .multiInstanceContainer {
-	position: relative; 
-	z-index: 9; 
+	position: relative;
+	z-index: 9;
 	background-color: white;
 }
 
 .multiInstanceBox {
-	border: 1px solid gray; 
-	display: inline; 
+	border: 1px solid gray;
+	display: inline;
 	text-align: center;
 	cursor: pointer;
 }
@@ -262,7 +262,7 @@ div.requiredWrapper::after {
 }
 
 .ui-datepicker-today a.ui-state-highlight {
-	border: 1px solid red; 
+	border: 1px solid red;
 	background-color: #aaaaaa;
 }
 .ui-datepicker-current-day a.ui-state-active {

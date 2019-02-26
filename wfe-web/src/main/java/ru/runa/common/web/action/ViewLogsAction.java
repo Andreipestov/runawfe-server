@@ -60,7 +60,7 @@ public class ViewLogsAction extends ActionBase {
                 }
 
                 if (form.getEndLine() == 0) {
-                    form.setEndLine(limitLinesCount);
+                    form.setEndLine(form.getLimitLinesCount());
                 }
 
                 String logFileContent;
@@ -135,6 +135,13 @@ public class ViewLogsAction extends ActionBase {
             if (form.getLinesFound() % form.getLimitLinesCount() != 0) {
                 n++;
             }
+
+            String href = getHrefPage(form, form.getStartLine() - form.getLimitLinesCount(), form.getEndLine() - form.getLimitLinesCount());
+            b.append("<div><a href=\"").append(href).append("\">").append("[ < Назад ]").append("</a>&nbsp;&nbsp;&nbsp;");
+
+            href = getHrefPage(form, form.getStartLine() + form.getLimitLinesCount(), form.getEndLine() + form.getLimitLinesCount());
+            b.append("<a href=\"").append(href).append("\">").append("[ Вперед > ]").append("</a>&nbsp;&nbsp;&nbsp;");
+
             for (int i = 0; i < n; i++) {
                 int startFrom = i * form.getLimitLinesCount() + 1;
                 int endTo = startFrom + form.getLimitLinesCount() - 1;
@@ -144,22 +151,29 @@ public class ViewLogsAction extends ActionBase {
                 } else {
                     text = "[" + startFrom + "-" + endTo + "]";
                 }
-                String href = "/wfe" + ViewLogsAction.ACTION_PATH +
-                        ".do?fileName=" + form.getFileName() +
-                        "&mode=" + form .getMode() +
-                        "&startLine=" + startFrom +
-                        "&endLine=" + endTo +
-                        "&searchContainsWord=" + String.valueOf(form.isSearchContainsWord()) +
-                        "&searchCaseSensitive=" + String.valueOf(form.isSearchCaseSensitive()) +
-                        "&searchErrors=" + String.valueOf(form.isSearchErrors()) +
-                        "&searchWarns=" + String.valueOf(form.isSearchWarns()) +
-                        "&limitLinesCount=" + form.getLimitLinesCount() +
-                        "&search=" + (form.getSearch() == null ? "" : form.getSearch());
-                b.append("<a href=\"").append(href).append("\">").append(text).append("</a>&nbsp;&nbsp;&nbsp;");
+
+                href = getHrefPage(form, startFrom, endTo);
+                b.append("<a " + (form.getStartLine() == startFrom ? "style=\"color:#3c0148; text-decoration:none\" class=\"current-page\" " : "") + "href=\"").append(href).append("\">").append(text).append("</a>&nbsp;&nbsp;&nbsp;");
             }
+
+            b.append("</div>");
             return b.toString();
         }
         return null;
+    }
+
+    private String getHrefPage(ViewLogForm form, Integer startFrom, Integer endTo) {
+        return "/wfe" + ViewLogsAction.ACTION_PATH +
+                ".do?fileName=" + form.getFileName() +
+                "&mode=" + form .getMode() +
+                "&startLine=" + startFrom +
+                "&endLine=" + endTo +
+                "&searchContainsWord=" + String.valueOf(form.isSearchContainsWord()) +
+                "&searchCaseSensitive=" + String.valueOf(form.isSearchCaseSensitive()) +
+                "&searchErrors=" + String.valueOf(form.isSearchErrors()) +
+                "&searchWarns=" + String.valueOf(form.isSearchWarns()) +
+                "&limitLinesCount=" + form.getLimitLinesCount() +
+                "&search=" + (form.getSearch() == null ? "" : form.getSearch());
     }
 
     private String searchLines(File file, ViewLogForm form, List<Integer> lineNumbers) throws IOException {
@@ -251,6 +265,4 @@ public class ViewLogsAction extends ActionBase {
             return b.toString();
         }
     }
-
-
 }
