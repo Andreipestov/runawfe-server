@@ -17,6 +17,10 @@ a:active {color: #666666; text-decoration: none;}
 
 a:focus {color: #990000;text-decoration: none;}
 
+a.current-page {
+	color: #5a43ac;
+}
+
 table.box {
 	width: 100%;
 	font-family: Arial, Helvetica, sans-serif;

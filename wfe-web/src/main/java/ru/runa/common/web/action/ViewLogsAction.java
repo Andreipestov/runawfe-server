@@ -137,10 +137,10 @@ public class ViewLogsAction extends ActionBase {
             }
 
             String href = getHrefPage(form, form.getStartLine() - form.getLimitLinesCount(), form.getEndLine() - form.getLimitLinesCount());
-            b.append("<div><a href=\"").append(href).append("\">").append("[ < Назад ]").append("</a>&nbsp;&nbsp;&nbsp;");
+            b.append("<div class='paging-div' style='display: block;'><div style='display: inline-block;'><a style='font-weight: bold;' href=\"").append(href).append("\">").append("[ < Назад ]").append("</a></div>&nbsp;&nbsp;&nbsp;");
 
             href = getHrefPage(form, form.getStartLine() + form.getLimitLinesCount(), form.getEndLine() + form.getLimitLinesCount());
-            b.append("<a href=\"").append(href).append("\">").append("[ Вперед > ]").append("</a>&nbsp;&nbsp;&nbsp;");
+            b.append("<div style='display: inline-block'><a style='font-weight: bold;' href=\"").append(href).append("\">").append("[ Вперед > ]").append("</a></div>&nbsp;&nbsp;&nbsp;");
 
             for (int i = 0; i < n; i++) {
                 int startFrom = i * form.getLimitLinesCount() + 1;
@@ -153,7 +153,7 @@ public class ViewLogsAction extends ActionBase {
                 }
 
                 href = getHrefPage(form, startFrom, endTo);
-                b.append("<a " + (form.getStartLine() == startFrom ? "style=\"color:#3c0148; text-decoration:none\" class=\"current-page\" " : "") + "href=\"").append(href).append("\">").append(text).append("</a>&nbsp;&nbsp;&nbsp;");
+                b.append("<div style='display: inline-block;'><a " + (form.getStartLine() == startFrom ? "style=\"color:#3c0148; text-decoration:none\" class=\"current-page\" " : "") + "href=\"").append(href).append("\">").append(text).append("</a></div>&nbsp;&nbsp;&nbsp;");
             }
 
             b.append("</div>");
