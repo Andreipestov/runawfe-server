@@ -19,6 +19,7 @@ a:focus {color: #990000;text-decoration: none;}
 
 a.current-page {
 	color: #5a43ac;
+	font-weight: bolder;
 }
 
 table.box {

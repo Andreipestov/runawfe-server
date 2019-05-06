@@ -190,12 +190,16 @@ public class ViewLogsAction extends ActionBase {
                     result = form.isSearchCaseSensitive() ? StringUtils.contains(line, form.getSearch()) : StringUtils.containsIgnoreCase(line, form.getSearch());
                 }
 
-                if (form.isSearchErrors()) {
-                    result = result && StringUtils.contains(line, " ERROR ");
-                }
+                if (form.isSearchErrors() && form.isSearchWarns()) {
+                    result = result && (StringUtils.contains(line, " ERROR ") || StringUtils.contains(line, " WARN "));
+                } else {
+                    if (form.isSearchErrors()) {
+                        result = result && StringUtils.contains(line, " ERROR ");
+                    }
 
-                if (form.isSearchWarns()) {
-                    result = result && StringUtils.contains(line, " WARN ");
+                    if (form.isSearchWarns()) {
+                        result = result && StringUtils.contains(line, " WARN ");
+                    }
                 }
 
                 if (result) {
@@ -235,12 +239,16 @@ public class ViewLogsAction extends ActionBase {
                     result = form.isSearchCaseSensitive() ? StringUtils.contains(line, form.getSearch()) : StringUtils.containsIgnoreCase(line, form.getSearch());
                 }
 
-                if (form.isSearchErrors()) {
-                    result = result && StringUtils.contains(line, " ERROR ");
-                }
+                if (form.isSearchErrors() && form.isSearchWarns()) {
+                    result = result && (StringUtils.contains(line, " ERROR ") || StringUtils.contains(line, " WARN "));
+                } else {
+                    if (form.isSearchErrors()) {
+                        result = result && StringUtils.contains(line, " ERROR ");
+                    }
 
-                if (form.isSearchWarns()) {
-                    result = result && StringUtils.contains(line, " WARN ");
+                    if (form.isSearchWarns()) {
+                        result = result && StringUtils.contains(line, " WARN ");
+                    }
                 }
 
                 if (result) {
